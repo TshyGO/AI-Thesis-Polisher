@@ -1,41 +1,64 @@
 @echo off
+setlocal
 chcp 65001 >nul
-title AI Thesis Polisher - 论文润色神器启动器
+title AI Thesis Polisher Launcher
 
 echo =======================================================
-echo              AI Thesis Polisher 启动脚本             
+echo               AI Thesis Polisher Launcher
 echo =======================================================
 echo.
 
-:: 1. 检查 Python 是否安装
+set "PYTHON_CMD="
 python --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [错误] 未检测到 Python，请先安装 Python 并添加到环境变量 (PATH)。
-    echo 下载地址：https://www.python.org/downloads/
-    pause
-    exit /b
+if %errorlevel% equ 0 set "PYTHON_CMD=python"
+
+if not defined PYTHON_CMD (
+    py -3 --version >nul 2>&1
+    if %errorlevel% equ 0 set "PYTHON_CMD=py -3"
 )
 
-:: 2. 检查/创建虚拟环境
-if not exist "venv\Scripts\activate.bat" (
-    echo [初始化] 正在创建独立的 Python 虚拟环境 (首次运行可能需要几十秒)...
-    python -m venv venv
+if not defined PYTHON_CMD (
+    echo [ERROR] Python 3 was not found.
+    echo Install Python from: https://www.python.org/downloads/
+    echo Make sure "Add python.exe to PATH" is enabled during installation.
+    pause
+    exit /b 1
+)
+
+if not exist "requirements.txt" (
+    echo [ERROR] requirements.txt was not found.
+    echo Please run this script from the project root directory.
+    pause
+    exit /b 1
+)
+
+if not exist "venv\Scripts\python.exe" (
+    echo [SETUP] Creating virtual environment...
+    call %PYTHON_CMD% -m venv venv
     if %errorlevel% neq 0 (
-        echo [错误] 虚拟环境创建失败。
+        echo [ERROR] Failed to create virtual environment.
         pause
-        exit /b
+        exit /b 1
     )
 )
 
-:: 3. 激活虚拟环境
-call venv\Scripts\activate
+set "VENV_PYTHON=venv\Scripts\python.exe"
 
-:: 4. 安装/更新依赖
-echo [依赖安装] 正在配置应用环境...
-pip install -r requirements.txt
+if not exist "%VENV_PYTHON%" (
+    echo [ERROR] Virtual environment python was not found: %VENV_PYTHON%
+    pause
+    exit /b 1
+)
 
-:: 5. 启动 Streamlit
-echo [启动服务] 正在启动本地 Web 界面，请稍候不要关闭此窗口...
-streamlit run ui/app.py
+echo [SETUP] Installing dependencies...
+call "%VENV_PYTHON%" -m pip install -r requirements.txt
+if %errorlevel% neq 0 (
+    echo [ERROR] Dependency installation failed.
+    pause
+    exit /b 1
+)
+
+echo [RUN] Starting local web UI...
+call "%VENV_PYTHON%" -m streamlit run ui\app.py
 
 pause
