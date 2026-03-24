@@ -17,3 +17,7 @@ cache/
 !demo_paper.docx
 *.xlsx
 legacy_scripts/
+outputs/
+app_debug.log
+user_config.json
+tmp*/

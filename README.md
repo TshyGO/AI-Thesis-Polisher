@@ -1,92 +1,184 @@
-# 🎓 AI Thesis Polisher (论文润色神器)
+# AI Thesis Polisher
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![Streamlit](https://img.shields.io/badge/UI-Streamlit-red)
-![License](https://img.shields.io/badge/License-MIT-green)
+本项目是一个在 Windows 本地运行的论文润色工具。
 
-*(English README follows below / 英文介绍在下方)*
+它会读取 `.docx` 文档，调用兼容 OpenAI 接口的大模型 API 生成修改建议，再通过 Microsoft Word 的原生修订功能把修改写回文档。结果不是纯文本覆盖，而是保留 Track Changes，方便作者逐条审阅。
 
-AI Thesis Polisher 是一款专为学术辅助设计的本地开源 Word 润色工具。它通过调用大语言模型 (LLM) API 对文档进行智能语言打磨，并结合 `win32com` 接口，将大模型输出的修改建议以原生“修订追踪 (Track Changes)”的形式写入 Microsoft Word 文档中，以保证用户对内容的绝对控制与可追溯性。
+项目当前使用 Streamlit 作为界面层，Word 操作依赖 `pywin32` / `win32com`。
 
-## 🎯 项目动因
+## 适用场景
 
-现有主流模型润色方法多采用“复制粘贴对话框”的形式，面临以下局限：
-1. **失去痕迹**：在长篇章学术论文中，作者难以追踪 AI 具体修改了哪些细节。
-2. **过度修改**：脱离上下文的大段投喂极易导致模型扭曲原作者本身的行脉与逻辑。
+- 需要保留 Word 修订痕迹，而不是拿一份“改完但看不出改了什么”的新文档
+- 论文篇幅较长，希望按段落处理，降低一次性大段投喂带来的误改
+- 需要生成 Excel 报表，回看每条建议对应的句子、原因、状态和优先级
 
-本项目通过段落维度的流式处理、格式屏障保护、多轮交叉审查机制以及原生 Word 对象操纵接口，为研究者提供真正工程级别的高效、精准论文优化手段。
+## 当前处理流程
 
-## ✨ 核心特性
+### Stage 0
 
-- 📝 **原生 Word 修订映射**：系统控制本地 Word 进程读取段落，并使用 Find & Execute 将 AI 生成的新文本注入，从而原生生成 Word 红线“修订（Track Changes）”，方便作者逐句接受或拒绝。
-- 🕵️ **多阶段交叉复审 (Cross-Review)**：由 Stage 1 以标准温度发散提出局部短语优化建议，随后进入 Stage 2 以最低温度 (0.1) 扮演终审角色过滤掉过度改写。极大降低了“机器生成味”。
-- 🗄️ **状态缓存机制 (Checkpointing)**：由于长篇博士论文接口调用时间可能超过数小时。程序会在本地实时保存每一段落的哈希与进度缓存；处理中途崩溃、超时或退出均可从断点恢复进度，跨进程有效。
-- 🛡️ **底层格式隔离保护**：利用 Range 检测技术拦截包含了上标、下标（如元素分子式、数学常量表）与 OMaths 区域的文本编辑指令，保障文档基础排版稳定。
-- 🌐 **多语言与结构解耦系统**：针对不同论文情况，内置自适应段落切分模式，并在初始化阶段通过枚举 Word `Heading1` 一级大纲样式获取论文目录树结构，以便细粒度跳过指定段落（如：致谢、参考文献）。
+先按章节读取全文，生成章节工作笔记。笔记会概括本章研究内容、关键术语、容易误判的专业表达和文风风险区域。
 
-## 🚀 部署指南
+### Stage 1
 
-### 环境要求
-- 一台已合法安装 **Microsoft Word (Office Desktop)** 的 Windows 计算机。
-- **Python (3.8+)** 环境配置完成（且已加入环境变量）。
+对每个段落按句标注后逐句审阅，提名可能需要修改的短语。Prompt 会带上：
 
-### 部署步骤
-1. 下载/克隆本项目代码压缩包。
-2. 双击项目根目录下的 **`start.bat`**。该脚本将执行自动化初始化流程：
-   - 检查 Python 可执行环境。
-   - 使用 venv 隔离创建 Python 虚拟环境。
-   - 通过国内镜像源下载对应依赖包 (`streamlit`, `openai`, `pywin32`, `openpyxl`)。
-   - 启动基于 Streamlit 的本地 Web UI 服务。
-3. 待命令行提示服务开启后，可在被弹出的浏览器应用页进行 API 密钥设定与参数调节。最后上传目标 `.docx` 文件完成运行。
+- 章节笔记
+- 前后文
+- 不应修改的内容约束
+- 被动句处理边界
 
-## 🔧 扩展与二次开发
+### Stage 2
 
-该项目使用严格解耦的 MVC 型架构设计：
-- `engine/llm_client.py`: 通用大模型连入中转器（全面兼容符合 OpenAI 格式的调用方接口及 DeepSeek 系列）。
-- `engine/document.py`: 负责底座 Office 进程派放与清洗过滤。
-- `engine/pipelines.py`: 调度工作流核心主线，进行顺序节点控制（阶段注入等）。
+对 Stage 1 的提名结果做保守复审，过滤掉：
 
-## 💡 开源协议
-MIT License.  
-期待更多的科研人员、开发者提交 PR 为这一提效工具贡献力量。
+- 没有实质提升的改写
+- 误伤专业术语、缩写、数值、引用的改写
+- 不该动的合理被动句
+- 破坏逻辑衔接的改写
 
----
+### 输出
 
-# 🎓 AI Thesis Polisher (English Version)
+- Word：原文档写入修订痕迹
+- Excel：按章节分 Sheet 输出审核明细
 
-AI Thesis Polisher is an open-source, locally hosted Word document editing tool designed for academic assistance. By leveraging Large Language Model (LLM) APIs such as DeepSeek or OpenAI, it intelligently refines academic texts. Crucially, it integrates with the `win32com` interface to inject the LLM-generated editing suggestions directly into Microsoft Word as native "Track Changes". This guarantees authors absolute control and traceability over their content.
+Excel 中会包含：
 
-## 🎯 Motivation
+- 段落号
+- 句子编号
+- 原句
+- 润色理由
+- 修改前片段
+- 修改后片段
+- 润色后完整句
+- 状态
+- 优先级
 
-Most mainstream AI-assisted writing methods rely on "copy-and-paste dialog boxes", inherently suffering from two major limitations:
-1. **Loss of Traceability**: In lengthy academic papers, authors struggle to track exactly what the AI altered.
-2. **Over-Editing**: Feeding massive chunks of text completely isolated from the document's structure leads to the AI severely distorting the author's original narrative and logic.
+## 这版新增内容
 
-This project offers researchers a truly robust, effective, and precise manuscript optimization tool by orchestrating paragraph-level streaming, formatting barriers, an intensive multi-round cross-review mechanism, and native Word object manipulation.
+- 章节级 Stage 0 预读，不再让每段都在无全局上下文的情况下单独判断
+- 更严格的 Stage 2 复审规则
+- 中文 Prompt 增加被动句“该改 / 不该改”示例
+- Excel 按章节分 Sheet
+- 支持删除型修改写入 Word 修订
+- 支持在界面中设置输出目录
+- 每次运行自动把 Word 和 Excel 落盘到指定目录
+- 支持对 Stage 0 / Stage 1 / Stage 2 追加自定义 Prompt 说明
 
-## ✨ Core Features
+## 环境要求
 
-- 📝 **Native Word Track Changes Integration**: The system handles a local Word process to parse paragraphs and uses Find & Execute to inject AI revisions into the original document, keeping all track changes visible.
-- 🕵️ **Multi-Stage Cross-Review**: "Stage 1" proposes local phrasing enhancements with higher temperature divergence. Then, "Stage 2" acts as a strict jury (with Temperature 0.1) validating Stage 1's suggestions, dropping the ones that simply rewrite without academic merit.
-- 🗄️ **Persistent Checkpointing**: Processing a lengthy doctoral thesis can take hours. To prevent API timeouts or network errors from ruining the whole process, the script maps progress locally via MD5 Hashes. If restarted, all previously processed paragraphs are instantly bypassed.
-- 🛡️ **Format Isolation Shield**: Uses internal Range Detection to block edit commands on paragraphs containing superscripts, subscripts (e.g., chemical formulas like H₂O), and OMaths equations.
-- 🌐 **Adaptive Decoupled System**: Autonomously partitions sentences relying on Chinese/English punctuation and pulls a map of the document's abstract tree structure using the `Heading 1` Word style, letting users actively ignore structural subsets like 'Acknowledgements' or 'References'.
+- Windows
+- Microsoft Word（桌面版）
+- Python 3.8+
 
-## 🚀 Quick Start
+## 安装与启动
 
-### Pre-requisites
-- A Windows PC with **Microsoft Word (Office Desktop)** properly installed.
-- **Python (3.8+)** installed and added to the PATH.
+### 方式一：直接运行批处理
 
-### Deployment Steps
-1. Download or clone this repository folder.
-2. Double-click **`start.bat`** in the root directory. This script performs the standard initialization pipeline:
-   - Validates Python accessibility.
-   - Installs and isolates an automated venv environment.
-   - Installs crucial dependencies.
-   - Starts the local Streamlit Web UI.
-3. Once the local URL pops up in your browser, configure your chosen `API Key` and model parameters. Finally, upload the `.docx` file and start the polishing pipeline!
+双击项目根目录下的 `start.bat`。
 
-## 💡 License
-MIT License.  
-PRs, technical discussions, and contributions are widely welcomed and encouraged!
+它会尝试：
+
+1. 检查 Python
+2. 创建虚拟环境
+3. 安装依赖
+4. 启动 Streamlit
+
+### 方式二：手动启动
+
+```powershell
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run ui/app.py
+```
+
+## 使用说明
+
+### 1. 配置模型
+
+在左侧栏填写：
+
+- `API Key`
+- `Base URL`
+- `Model`
+
+支持兼容 OpenAI Chat Completions 的接口。
+
+### 2. 设置输出目录
+
+左侧栏可以设置“输出根目录”。
+
+每次运行时，程序会在该目录下自动创建一个新的时间戳子目录，并把结果写进去，例如：
+
+```text
+outputs/
+  20260324_201530_demo_paper/
+    Polished_demo_paper.docx
+    Report_demo_paper.xlsx
+```
+
+页面刷新后，如果上一次输出文件仍然存在，界面会尝试恢复最近一次结果的下载入口。
+
+### 3. 上传文档并运行
+
+上传 `.docx` 后，可以设置：
+
+- 语言模式
+- 润色强度
+- 最小段落长度
+- 是否开启交叉复审
+- 需要跳过的章节
+
+### 4. Prompt 自定义
+
+界面里提供三个可选输入框：
+
+- Stage 0 章节理解附加要求
+- Stage 1 提名附加要求
+- Stage 2 复审附加要求
+
+这些内容会追加到内置 Prompt 末尾，而不是直接替换整个 Prompt。
+
+这样做的目的很简单：
+
+- 保留当前流程里已经验证过的基础约束
+- 允许用户增加自己的规则
+- 降低因为完全自定义 Prompt 导致格式输出失控的概率
+
+## 目录结构
+
+```text
+engine/
+  document.py        Word 读取、章节解析、修订写入
+  excel_exporter.py  Excel 报表导出
+  llm_client.py      大模型 API 调用
+  pipelines.py       主流程：Stage 0 / 1 / 2
+
+ui/
+  app.py             Streamlit 界面
+```
+
+## 已知限制
+
+- 依赖本机可用的 Microsoft Word
+- 当前界面是 Streamlit，适合单机、本地、单用户使用，不适合做复杂任务管理
+- Prompt 自定义目前是“追加说明”，不是完整模板编辑
+- 某些复杂格式区域仍然会被主动跳过，以避免破坏文档结构
+
+## 开发说明
+
+### 运行测试
+
+```powershell
+python -m unittest test_pipeline_regressions.py
+```
+
+### 主要回归点
+
+- 章节预读是否进入后续 Prompt
+- 删除型修改是否真的写入 Word 修订
+- Excel 是否按章节输出并保留关键字段
+
+## License
+
+MIT
