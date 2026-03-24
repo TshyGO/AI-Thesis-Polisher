@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+.env
+
+# Tooling
+.vscode/
+.idea/
+
+# Project Specific
+cache/
+*.docx
+!demo_paper.docx
+*.xlsx
+legacy_scripts/
