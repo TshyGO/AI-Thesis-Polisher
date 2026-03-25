@@ -1,0 +1,59 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Build release zip
+        run: |
+          ZIP_NAME="AI-Thesis-Polisher-${{ steps.version.outputs.VERSION }}.zip"
+          zip -r "$ZIP_NAME" \
+            engine/ \
+            ui/ \
+            requirements.txt \
+            start.bat \
+            README.md \
+            LICENSE \
+            $([ -f demo_paper.docx ] && echo "demo_paper.docx") \
+            --exclude "**/__pycache__/*" \
+            --exclude "**/*.pyc"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AI Thesis Polisher ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## 安装方法
+
+            1. 下载下方的 `AI-Thesis-Polisher-${{ steps.version.outputs.VERSION }}.zip`
+            2. 解压到任意目录
+            3. 双击 `start.bat`，会自动安装依赖并在浏览器打开界面
+
+            ## 环境要求
+
+            - Windows
+            - Microsoft Word（桌面版）
+            - Python 3.8+（安装时勾选 "Add to PATH"）
+
+            ## 更新日志
+
+            见 [提交记录](https://github.com/${{ github.repository }}/commits/${{ steps.version.outputs.VERSION }})
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: false
