@@ -20,4 +20,5 @@ legacy_scripts/
 outputs/
 app_debug.log
 user_config.json
+benchmarks/private/
 tmp*/

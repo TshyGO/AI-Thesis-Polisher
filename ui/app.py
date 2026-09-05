@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import shutil
+import uuid
 from pathlib import Path
 
 import streamlit as st
@@ -64,7 +65,7 @@ def build_run_output_dir(output_root: str, original_name: str) -> str:
     root = Path(ensure_directory(output_root))
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     stem = sanitize_filename(Path(original_name).stem)
-    run_dir = root / f"{timestamp}_{stem}"
+    run_dir = root / f"{timestamp}_{stem}_{uuid.uuid4().hex[:8]}"
     run_dir.mkdir(parents=True, exist_ok=True)
     return str(run_dir)
 
@@ -104,6 +105,7 @@ sys.path.append(str(PROJECT_ROOT))
 from engine.llm_client import LLMClient
 from engine.document import DocumentProcessor
 from engine.pipelines import PolishingPipeline
+from engine.uploads import upload_identity
 
 st.set_page_config(page_title="AI Thesis Polisher", page_icon="🎓", layout="wide")
 
@@ -142,21 +144,24 @@ uploaded_file = st.file_uploader("上传待润色的 Word 文档 (.docx)", type=
 if uploaded_file is not None and api_key:
     UPLOAD_CACHE_ROOT.mkdir(parents=True, exist_ok=True)
 
-    if "work_copy_path" not in st.session_state or st.session_state.get("last_uploaded_name") != uploaded_file.name:
+    upload_hash, upload_changed = upload_identity(uploaded_file.getbuffer(), uploaded_file.name, st.session_state)
+    if upload_changed:
         timestamp = int(time.time())
         safe_upload_name = sanitize_filename(uploaded_file.name)
-        work_copy_path = UPLOAD_CACHE_ROOT / f"{timestamp}_{safe_upload_name}"
+        work_copy_path = UPLOAD_CACHE_ROOT / f"{upload_hash}_{safe_upload_name}"
         with open(work_copy_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
         st.session_state["work_copy_path"] = str(work_copy_path)
         st.session_state["last_uploaded_name"] = uploaded_file.name
+        st.session_state["last_uploaded_hash"] = upload_hash
+        st.session_state.pop("parsed_chapters", None)
     else:
         work_copy_path = Path(st.session_state["work_copy_path"])
 
     with st.spinner("正在解析文档章节结构（需几秒钟后台调起 Word）..."):
         try:
-            if "parsed_chapters" not in st.session_state or st.session_state.get("last_uploaded_name") != uploaded_file.name:
+            if "parsed_chapters" not in st.session_state:
                 with DocumentProcessor() as dp:
                     dp.open_document(str(work_copy_path), read_only=True)
                     chapters = dp.parse_chapters()
@@ -289,10 +294,11 @@ if uploaded_file is not None and api_key:
                     my_bar.progress(pct, text=f"{progress_text} ({current}/{total})")
                     status_box.info(f"⏳ 正在处理第 {current} 段 (共 {total} 段)")
 
-                changes, excel_path = pipeline.process_document(str(work_copy_path), progress_callback=on_progress)
+                word_output_path = os.path.join(run_output_dir, word_output_name)
+                shutil.copy2(str(work_copy_path), word_output_path)
+                changes, excel_path = pipeline.process_document(word_output_path, progress_callback=on_progress)
 
             word_output_path = os.path.join(run_output_dir, word_output_name)
-            shutil.copy2(str(work_copy_path), word_output_path)
 
             persist_result_to_session(word_output_path, excel_path)
             st.session_state["last_output_dir"] = run_output_dir
@@ -312,8 +318,11 @@ if uploaded_file is not None and api_key:
             })
 
             my_bar.empty()
-            status_box.success(f"✅ 润色完毕！共计采纳了 {changes} 处实质性修改。输出目录：{run_output_dir}")
-            st.balloons()
+            failures = sum(r.get("status", "").endswith(("ERROR", "FAILED", "TIMEOUT")) for r in pipeline.last_records)
+            if failures:
+                status_box.warning(f"处理结束，但有 {failures} 条失败记录；请检查 Excel 状态列。写入 {changes} 处修改。输出：{run_output_dir}")
+            else:
+                status_box.success(f"✅ 润色完毕！共计采纳了 {changes} 处实质性修改。输出目录：{run_output_dir}")
 
         except Exception as e:
             st.error(f"❌ 运行过程中发生错误：{e}")
