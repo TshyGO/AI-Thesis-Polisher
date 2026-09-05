@@ -1,9 +1,8 @@
 import hashlib
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import openai
-import httpx
 
 from engine.llm_client import LLMClient, ModelFormatError
 from engine.uploads import upload_identity
@@ -125,7 +124,7 @@ class PureTests(unittest.TestCase):
         for old, new in [("80 ℃", "90 ℃"), ("2 h", "2 s"), ("[1]", "[2]"),
                          ("APTES", "PMSA"), ("二氧化硅", "氧化铝"),
                          ("20 ℃和80 ℃", "80 ℃和20 ℃"), ("0.021 W m−1 K−1", "0.021 W m−1"),
-                         ("H2SO4", "H2O"), ("pH", "PH")]:
+                         ("H2SO4", "H2O"), ("NaCl", "KCl"), ("pH", "PH")]:
             with self.subTest(old=old):
                 self.assertTrue(validator.validate(old, new))
         self.assertTrue(validator.validate("W m⁻² K⁻¹", "W m² K⁻¹"))
@@ -162,8 +161,10 @@ class PureTests(unittest.TestCase):
         client.client = Mock()
         client.logger = Mock()
         client.model = "fake"
-        client.client.chat.completions.create.side_effect = openai.APITimeoutError(request=httpx.Request("POST", "https://example.invalid"))
-        with self.assertRaises(ModelError) as error:
+        class FakeTimeout(Exception):
+            pass
+        client.client.chat.completions.create.side_effect = FakeTimeout()
+        with patch.object(openai, "APITimeoutError", FakeTimeout), self.assertRaises(ModelError) as error:
             client.call_api([], max_retries=1)
         self.assertEqual(error.exception.status, "MODEL_TIMEOUT")
 

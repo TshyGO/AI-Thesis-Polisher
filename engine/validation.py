@@ -16,7 +16,7 @@ class ProtectedSpanExtractor:
     PATTERNS = {
         "number": r"[−+-]?\d+(?:[.,]\d+)*(?:[eE][−+-]?\d+)?",
         "citation": r"\[[\d\s,，;；–—-]+\]",
-        "abbreviation_formula": r"(?<![A-Za-z])(?:[A-Z]{2,}[A-Za-z0-9₀-₉]*|(?:[A-Z][a-z]?\d+)+[A-Za-z0-9]*)(?![A-Za-z])",
+        "abbreviation_formula": r"(?<![A-Za-z])(?:[A-Z]{2,}[A-Za-z0-9₀-₉]*|(?:[A-Z][a-z]?[0-9₀-₉]*){2,})(?![A-Za-z])",
         "unit": r"(?<![A-Za-z])(?:℃|°C|%|wt%|mol|mm|cm|nm|μm|µm|mg|kg|mL|kPa|MPa|GPa|Hz|kHz|K|W|h|min|s|m|g|L)(?![A-Za-z])",
         "compound_unit": r"(?<![A-Za-z])(?:W|mol|g|kg|m|cm|mm|s|K|L)(?:[· /]*[A-Za-zμµ]+)?(?:[−-]\d+|[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+|\^[-−]?\d+)",
         "reference": r"(?:Fig\.|Eq\.|Table|图|表|式)\s*\d+(?:[.-]\d+)*",
