@@ -47,6 +47,10 @@ one HTTP attempt per call, 90 seconds per attempt, and records synthetic/public
 responses locally for diagnostics. JSON format correction uses one additional
 explicit request, then fails closed. The cap is a request cap, not a currency cap.
 The runner never calls Word and reports that limitation explicitly.
+`--resume` replays cached suggestions into a fresh in-memory document and retries
+only missing model results. It requires an existing report with matching model,
+prompt version and corpus hash, and overwrites that run's reports; archive the
+initial report first if both measurements are needed.
 
 Remaining quality acceptance: obtain 30–50 authorised real examples, human-review
 labels, capture fixed baseline/candidate predictions, compare reports and manually

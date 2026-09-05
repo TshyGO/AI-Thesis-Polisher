@@ -109,6 +109,15 @@ class P0Tests(unittest.TestCase):
         pipeline.cache_file.write_text("[]", encoding="utf-8")
         self.assertEqual(pipeline.load_cache(), {})
 
+    def test_reviewer_cannot_introduce_new_edits(self):
+        doc, pipeline, client, parser = self.make_run()
+        client.call_json_api = Mock(side_effect=[
+            [{"sentence_id": "S1", "old": "值得注意的是", "new": ""}],
+            [{"sentence_id": "S1", "old": "聚焦", "new": "关注"}], []])
+        pipeline.process_document(str(doc))
+        self.assertFalse(parser.revisions)
+        self.assertEqual(pipeline.last_records[0]["status"], "MODEL_FORMAT_ERROR")
+
 
 class PureTests(unittest.TestCase):
     def test_strict_parser(self):
@@ -124,7 +133,8 @@ class PureTests(unittest.TestCase):
         for old, new in [("80 ℃", "90 ℃"), ("2 h", "2 s"), ("[1]", "[2]"),
                          ("APTES", "PMSA"), ("二氧化硅", "氧化铝"),
                          ("20 ℃和80 ℃", "80 ℃和20 ℃"), ("0.021 W m−1 K−1", "0.021 W m−1"),
-                         ("H2SO4", "H2O"), ("NaCl", "KCl"), ("pH", "PH")]:
+                         ("H2SO4", "H2O"), ("NaCl", "KCl"), ("O2", "N2"),
+                         ("Fe3+", "Fe2+"), ("Fe³⁺", "Fe²⁺"), ("Cl-", "F-"), ("pH", "PH")]:
             with self.subTest(old=old):
                 self.assertTrue(validator.validate(old, new))
         self.assertTrue(validator.validate("W m⁻² K⁻¹", "W m² K⁻¹"))

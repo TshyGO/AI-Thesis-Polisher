@@ -565,6 +565,9 @@ Stage 1 提名的修改建议：
                     valid_ids = {f"S{n}" for n in range(1, len(sentences) + 1)}
                     if any(r["sentence_id"] not in valid_ids for r in raw_revisions + kept_revisions):
                         raise ModelFormatError("模型返回未知或无法定位的句子编号")
+                    proposed_keys = {(r["sentence_id"], r["old"], r["new"]) for r in raw_revisions}
+                    if any((r["sentence_id"], r["old"], r["new"]) not in proposed_keys for r in kept_revisions):
+                        raise ModelFormatError("复审返回了未提名的修改")
                     # Cache suggestions only, never a 'done' flag. Replay against a fresh source.
                     cache[cache_key] = {"raw": raw_revisions, "kept": kept_revisions}
                     raw_keys = {
@@ -655,6 +658,7 @@ Stage 1 提名的修改建议：
                         self.doc_parser.save()
 
                 except Exception as e:
+                    cache.pop(cache_key, None)
                     status = e.status if isinstance(e, ModelError) else "PROCESSING_ERROR"
                     all_excel_records.append({
                         "chapter": chapter_name, "paragraph_idx": i,

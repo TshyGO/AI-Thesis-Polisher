@@ -172,6 +172,8 @@ ui/
 
 离线评测说明见 [benchmarks/README.md](benchmarks/README.md)。包含 16 条合成样本和 20 条开放论文派生案例（10 条原句及对应构造错误），来源及 CC BY 4.0 许可见 [benchmarks/SOURCES.md](benchmarks/SOURCES.md)。标签由 Agent 制定，不冒充人工接受率；并非真实论文自然错误的代表性质量评测。
 
+本次真实 API、缓存恢复和 Word 验证结果见 [P0 验证记录](benchmarks/VALIDATION.md)。
+
 ```powershell
 python -m unittest test_pipeline_regressions test_p0
 # 单独运行，会启动本机 Word，仅创建合成测试文件：
