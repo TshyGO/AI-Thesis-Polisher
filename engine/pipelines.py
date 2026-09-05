@@ -5,12 +5,13 @@ import hashlib
 import logging
 from pathlib import Path
 
-from engine.llm_client import LLMClient
+from engine.llm_client import LLMClient, ModelError, ModelFormatError
+from engine.validation import Validator
 from engine.document import DocumentProcessor
 
 
 class PolishingPipeline:
-    PROMPT_VERSION = "stage0-stage2-v2"
+    PROMPT_VERSION = "p0-suggestions-v4"
 
     def __init__(self, llm_client: LLMClient, doc_parser: DocumentProcessor, config: dict):
         self.client = llm_client
@@ -31,13 +32,19 @@ class PolishingPipeline:
     def load_cache(self) -> dict:
         try:
             with open(self.cache_file, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                return data if isinstance(data, dict) else {}
         except Exception:
             return {}
 
     def save_cache(self, cache_data: dict):
-        with open(self.cache_file, "w", encoding="utf-8") as f:
+        temporary = self.cache_file.with_suffix(".tmp")
+        with open(temporary, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, ensure_ascii=False, indent=2)
+        os.replace(temporary, self.cache_file)
+
+    def _model_identity(self):
+        return f"{getattr(self.client, 'base_url', '')}|{getattr(self.client, 'model', '')}"
 
     def _prompt_customization(self) -> dict:
         return self.config.get("prompt_customization", {}) or {}
@@ -58,7 +65,7 @@ class PolishingPipeline:
         label = "Additional user instructions" if language in ("english", "mixed") else "用户自定义附加要求"
         return f"{prompt}\n\n---\n{label}：\n{extra}"
 
-    def get_cache_key(self, doc_path: str, paragraph_idx: int) -> str:
+    def get_cache_key(self, doc_path: str, paragraph_idx: int, text: str = "") -> str:
         """根据文档、段落号和当前 prompt 版本生成唯一缓存键。"""
         base_name = self.config.get("original_filename", os.path.basename(doc_path))
         model_name = getattr(self.client, "model", "")
@@ -71,6 +78,11 @@ class PolishingPipeline:
             str(self.config.get("use_cross_review", True)),
             model_name,
             self._prompt_customization_hash(),
+            getattr(self, "document_hash", None) or hashlib.sha256(Path(doc_path).read_bytes()).hexdigest(),
+            hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            self._model_identity(),
+            json.dumps({k: self.config.get(k) for k in
+                        ("min_chars", "skipped_chapters", "protected_terms")}, sort_keys=True),
         ])
         return hashlib.md5(key_str.encode("utf-8")).hexdigest()
 
@@ -80,7 +92,7 @@ class PolishingPipeline:
         key = hashlib.md5(
             (
                 f"{self.PROMPT_VERSION}|{base_name}|{chapter_name}|{language}|"
-                f"{text_hash}|{self._prompt_customization_hash()}"
+                f"{text_hash}|{self._prompt_customization_hash()}|{self._model_identity()}"
             ).encode("utf-8")
         ).hexdigest()
         return self.chapter_notes_dir / f"{key}.txt"
@@ -189,7 +201,8 @@ class PolishingPipeline:
             if matched_index is not None:
                 used_indexes.add(matched_index)
                 matched = raw_pool[matched_index]
-                for key in ("sentence_id", "old", "new", "reason", "priority"):
+                # Empty new is an intentional deletion, never fill it back in.
+                for key in ("sentence_id", "reason", "priority"):
                     if not reviewed.get(key):
                         reviewed[key] = matched.get(key, "")
 
@@ -241,6 +254,8 @@ class PolishingPipeline:
         )
         prompt = f"""
 请完整阅读以下论文章节，并输出一份供后续逐段审阅使用的工作笔记。
+仅依据原文，不推断或补充缺失的实验数值、方法、结论。信息不足时明确写“未提供”。
+实验操作中的合理被动句（如“样品被加热”“was heated”）不属于文风问题，不建议仅为换语态而改写。
 
 请覆盖这 4 部分：
 1. 本章核心研究内容与论证主线（3-5 句）
@@ -452,6 +467,9 @@ Stage 1 提名的修改建议：
         skipped_chapters = set(self.config.get("skipped_chapters", []))
 
         cache = self.load_cache()
+        self.document_hash = hashlib.sha256(Path(doc_path).read_bytes()).hexdigest()
+        self.last_records = []
+        validator = Validator(self.config.get("protected_terms", []))
         self.doc_parser.open_document(doc_path, read_only=False, track_revisions=True)
 
         total = self.doc_parser.get_total_paragraphs()
@@ -495,9 +513,7 @@ Stage 1 提名的修改建议：
                 if self.should_skip_paragraph(curr_text, min_chars, language):
                     continue
 
-                cache_key = self.get_cache_key(doc_path, i)
-                if cache_key in cache:
-                    continue
+                cache_key = self.get_cache_key(doc_path, i, curr_text)
 
                 try:
                     if chapter_name not in chapter_notes_map:
@@ -509,23 +525,32 @@ Stage 1 提名的修改建议：
 
                     sentences = self.split_sentences(curr_text, language)
                     labeled_text = self.label_sentences(sentences)
+                    protected = {f"S{n}": [{"type": span.kind, "text": span.text}
+                                           for span in validator.extractor.extract(sentence)]
+                                 for n, sentence in enumerate(sentences, 1)}
+                    labeled_text += "\n[Protected spans - do not alter]:\n" + json.dumps(protected, ensure_ascii=False)
                     prev_text = self.doc_parser.get_neighbor_text(i, direction="prev", limit=2)
                     next_text = self.doc_parser.get_neighbor_text(i, direction="next", limit=1)
 
+                    cached = cache.get(cache_key, {})
+                    if not isinstance(cached, dict):
+                        cached = {}
                     raw_revisions = [
                         self._normalize_revision(item)
-                        for item in self.run_stage_1_nomination(
+                        for item in (cached["raw"] if "raw" in cached else self.run_stage_1_nomination(
                             prev_text,
                             labeled_text,
                             next_text,
                             intensity,
                             language,
                             chapter_notes,
-                        )
+                        ))
                     ]
                     raw_revisions = self._attach_missing_sentence_ids(raw_revisions, sentences)
 
-                    if use_cross_review and raw_revisions:
+                    if "kept" in cached:
+                        kept_revisions = cached["kept"]
+                    elif use_cross_review and raw_revisions:
                         kept_revisions = self.run_stage_2_recheck(
                             labeled_text,
                             raw_revisions,
@@ -537,6 +562,14 @@ Stage 1 提名的修改建议：
 
                     kept_revisions = [self._normalize_revision(item) for item in kept_revisions]
                     kept_revisions = self._attach_missing_sentence_ids(kept_revisions, sentences)
+                    valid_ids = {f"S{n}" for n in range(1, len(sentences) + 1)}
+                    if any(r["sentence_id"] not in valid_ids for r in raw_revisions + kept_revisions):
+                        raise ModelFormatError("模型返回未知或无法定位的句子编号")
+                    proposed_keys = {(r["sentence_id"], r["old"], r["new"]) for r in raw_revisions}
+                    if any((r["sentence_id"], r["old"], r["new"]) not in proposed_keys for r in kept_revisions):
+                        raise ModelFormatError("复审返回了未提名的修改")
+                    # Cache suggestions only, never a 'done' flag. Replay against a fresh source.
+                    cache[cache_key] = {"raw": raw_revisions, "kept": kept_revisions}
                     raw_keys = {
                         (item.get("sentence_id", ""), item.get("old", ""), item.get("new", ""))
                         for item in raw_revisions
@@ -559,6 +592,7 @@ Stage 1 提名的修改建议：
                             rejected_by_sid.setdefault(rev.get("sentence_id", ""), []).append(rev)
 
                     for s_idx, sentence in enumerate(sentences, start=1):
+                        working_sentence = sentence
                         sentence_id = f"S{s_idx}"
                         kept_items = kept_by_sid.get(sentence_id, [])
                         rejected_items = rejected_by_sid.get(sentence_id, [])
@@ -568,11 +602,19 @@ Stage 1 提名的修改建议：
                                 old_txt = rev.get("old", "")
                                 new_txt = rev.get("new", "")
                                 status = "⚠️保留但写入失败"
-                                if old_txt and old_txt != new_txt:
+                                rejection = validator.validate_fragment(working_sentence, old_txt, new_txt)
+                                if curr_text.count(old_txt) != 1:
+                                    rejection = "source fragment is ambiguous within paragraph"
+                                if rejection:
+                                    status = "VALIDATION_REJECTED"
+                                elif old_txt and old_txt != new_txt:
                                     success = self.doc_parser.apply_tracked_revision(i, old_txt, new_txt)
                                     if success:
                                         changes_count += 1
                                         status = "✅保留"
+                                        working_sentence = working_sentence.replace(old_txt, new_txt, 1)
+                                    else:
+                                        status = "PATCH_FAILED"
 
                                 all_excel_records.append({
                                     "chapter": chapter_name,
@@ -581,11 +623,11 @@ Stage 1 提名的修改建议：
                                     "sentence": sentence,
                                     "old": old_txt,
                                     "new": new_txt,
-                                    "reason": rev.get("reason", ""),
+                                    "reason": rejection or rev.get("reason", ""),
                                     "status": status,
                                     "priority": rev.get("priority", ""),
                                 })
-                        elif rejected_items:
+                        if rejected_items:
                             for rev in rejected_items:
                                 all_excel_records.append({
                                     "chapter": chapter_name,
@@ -598,7 +640,7 @@ Stage 1 提名的修改建议：
                                     "status": "❌驳回",
                                     "priority": rev.get("priority", ""),
                                 })
-                        else:
+                        if not kept_items and not rejected_items:
                             all_excel_records.append({
                                 "chapter": chapter_name,
                                 "paragraph_idx": i,
@@ -611,17 +653,19 @@ Stage 1 提名的修改建议：
                                 "priority": "",
                             })
 
-                    cache[cache_key] = {
-                        "status": "done",
-                        "chapter": chapter_name,
-                        "changes": changes_count,
-                    }
                     if i % 5 == 0:
                         self.save_cache(cache)
                         self.doc_parser.save()
 
                 except Exception as e:
-                    self.logger.error(f"处理段落 {i} 出错: {e}", exc_info=True)
+                    cache.pop(cache_key, None)
+                    status = e.status if isinstance(e, ModelError) else "PROCESSING_ERROR"
+                    all_excel_records.append({
+                        "chapter": chapter_name, "paragraph_idx": i,
+                        "sentence": curr_text, "status": status,
+                        "reason": str(e) if isinstance(e, ModelError) else "段落处理失败，请检查运行日志",
+                    })
+                    self.logger.error("处理段落 %s 出错: %s", i, status)
 
         finally:
             self.save_cache(cache)
@@ -629,6 +673,8 @@ Stage 1 提名的修改建议：
 
             from engine.excel_exporter import ExcelExporter
 
-            ExcelExporter().export(export_path, all_excel_records, chapters=chapters)
+            self.last_records = all_excel_records
+            if not ExcelExporter().export(export_path, all_excel_records, chapters=chapters):
+                raise RuntimeError("Excel 报告导出失败，Word 已尝试保存，请检查输出目录")
 
         return changes_count, export_path

@@ -160,6 +160,26 @@ ui/
 
 ## 已知限制
 
+### P0 可靠性与校验
+
+- 上传身份由内容 SHA-256 与文件名共同识别，换文件时重新解析章节。
+- 每次运行复制原始上传文档到独立输出目录，不继续修改上传缓存。
+- 段落缓存包含文档/段落内容、模型端点和相关配置；旧版 `done` 缓存因版本变更失效，保留原文件但不复用。
+- 缓存仅保存模型建议；重新运行时重新校验、写入新 Word 并重建完整报告。中断后的恢复方式是从原始上传重新运行，复用已保存建议；不是原地续写半成品。
+- Excel 明确区分 `MODEL_FORMAT_ERROR`、`MODEL_TIMEOUT`、`MODEL_HTTP_ERROR`、`VALIDATION_REJECTED`、`PATCH_FAILED` 和无修改；有失败时界面不会宣称全部成功。
+- 写回前保守检查数字、常见单位、引用、缩写和部分化学式的内容、数量与顺序。引擎配置 `protected_terms` 可追加精确术语；重复片段不冒险定位。
+- 规则不是语义事实校验器，不能保证技术事实零误伤；完整句子范围写回仍属于 P1。缓存默认本地保存论文文本/建议，不适合多进程并发运行。
+
+离线评测说明见 [benchmarks/README.md](benchmarks/README.md)。包含 16 条合成样本和 20 条开放论文派生案例（10 条原句及对应构造错误），来源及 CC BY 4.0 许可见 [benchmarks/SOURCES.md](benchmarks/SOURCES.md)。标签由 Agent 制定，不冒充人工接受率；并非真实论文自然错误的代表性质量评测。
+
+本次真实 API、缓存恢复和 Word 验证结果见 [P0 验证记录](benchmarks/VALIDATION.md)。
+
+```powershell
+python -m unittest test_pipeline_regressions test_p0
+# 单独运行，会启动本机 Word，仅创建合成测试文件：
+python -m unittest test_p0_word_integration
+```
+
 - 依赖本机可用的 Microsoft Word
 - 当前界面是 Streamlit，适合单机、本地、单用户使用，不适合做复杂任务管理
 - Prompt 自定义目前是“追加说明”，不是完整模板编辑

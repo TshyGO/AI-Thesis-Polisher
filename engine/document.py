@@ -264,6 +264,11 @@ class DocumentProcessor:
             rng.Find.Text = old_text
             rng.Find.Forward = True
             rng.Find.Wrap = 0 # wdFindStop (只在本段落中找)
+            rng.Find.MatchCase = True
+            rng.Find.MatchWholeWord = False
+            rng.Find.MatchWildcards = False
+            rng.Find.MatchSoundsLike = False
+            rng.Find.MatchAllWordForms = False
             
             found = rng.Find.Execute()
             if found and rng.End <= p.Range.End:
@@ -271,7 +276,7 @@ class DocumentProcessor:
                 font_super = getattr(rng.Font, 'Superscript', 0)
                 font_sub = getattr(rng.Font, 'Subscript', 0)
                 # 9999999 或 True 代表有包含
-                if font_super in (9999999, True, 1) or font_sub in (9999999, True, 1):
+                if font_super in (9999999, -1, True, 1) or font_sub in (9999999, -1, True, 1):
                     self.logger.info(f"    [格式拦截] 含有上下标跳过: {old_text[:15]}")
                     return False
                     

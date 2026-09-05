@@ -1,0 +1,16 @@
+{"id":"zh01","original":"值得注意的是，该方法提高了测量精度。","should_edit":true,"accepted":["该方法提高了测量精度。"],"tags":["filler"],"protected_terms":[]}
+{"id":"zh02","original":"样品在80 ℃下被加热2 h。","should_edit":false,"accepted":[],"tags":["passive","units"],"protected_terms":[]}
+{"id":"zh03","original":"APTES用于表面改性。","should_edit":false,"accepted":[],"tags":["abbreviation"],"protected_terms":["APTES"]}
+{"id":"zh04","original":"热导率为0.021 W m−1 K−1。","should_edit":false,"accepted":[],"tags":["units","number"],"protected_terms":[]}
+{"id":"zh05","original":"结果如图2所示[12–14]。","should_edit":false,"accepted":[],"tags":["reference"],"protected_terms":[]}
+{"id":"zh06","original":"实验结果表明了该方法是有效的。","should_edit":true,"accepted":["实验结果表明该方法有效。"],"tags":["wordiness"],"protected_terms":[]}
+{"id":"zh07","original":"二氧化硅的含量保持不变。","should_edit":false,"accepted":[],"tags":["material"],"protected_terms":["二氧化硅"]}
+{"id":"zh08","original":"温度分别为20 ℃和80 ℃。","should_edit":false,"accepted":[],"tags":["ordered_values"],"protected_terms":[]}
+{"id":"en01","original":"The results shows improved stability.","should_edit":true,"accepted":["The results show improved stability."],"tags":["grammar"],"protected_terms":[]}
+{"id":"en02","original":"The sample was heated for 2 h.","should_edit":false,"accepted":[],"tags":["passive"],"protected_terms":[]}
+{"id":"en03","original":"In order to measure strength, we used a load cell.","should_edit":true,"accepted":["To measure strength, we used a load cell."],"tags":["wordiness"],"protected_terms":[]}
+{"id":"en04","original":"The concentration of H2SO4 was 0.5 mol L−1.","should_edit":false,"accepted":[],"tags":["formula","units"],"protected_terms":["H2SO4"]}
+{"id":"en05","original":"Fig. 2 shows the SEM images.","should_edit":false,"accepted":[],"tags":["abbreviation","reference"],"protected_terms":[]}
+{"id":"en06","original":"This is due to the fact that pores collapse.","should_edit":true,"accepted":["This is because pores collapse."],"tags":["wordiness"],"protected_terms":[]}
+{"id":"en07","original":"The measured value was 1.2e−3 MPa.","should_edit":false,"accepted":[],"tags":["scientific_notation"],"protected_terms":[]}
+{"id":"en08","original":"The pH remained unchanged.","should_edit":false,"accepted":[],"tags":["term"],"protected_terms":["pH"]}

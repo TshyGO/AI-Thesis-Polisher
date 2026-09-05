@@ -1,0 +1,31 @@
+name: P0 regression tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - run: python -m unittest test_pipeline_regressions test_p0
+      - run: python -m compileall -q engine ui benchmarks
+      - if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git diff --check "$env:BASE_SHA" HEAD
+      - if: github.event_name == 'push'
+        run: git diff-tree --check --root --no-commit-id -r HEAD
