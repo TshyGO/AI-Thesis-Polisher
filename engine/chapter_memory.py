@@ -15,6 +15,8 @@ MAX_CHUNK_CHARS = 12000
 MAX_CHUNK_SENTENCES = 80
 MAX_CHUNKS = 8
 MAX_CONTEXT_CHARS = 2400
+MAX_TERMS = 32
+MAX_FACTS = 64
 CONTRACT = '''Return only one JSON object with exactly keys terms and facts.
 Example: {"terms":[{"source_id":"P2:S1","text":"APTES","kind":"abbreviation"}],"facts":["P2:S1"]}
 Select only IDs supplied in this chunk. terms: at most 32 exact source substrings
@@ -53,12 +55,19 @@ def occurrences(text, term):
     return matches
 
 
-def selection_arrays(payload):
+def selection_shape(payload):
     """Contract shape. A payload failing here carries no usable selection at all."""
     if not isinstance(payload, dict) or set(payload) != {'terms', 'facts'}:
         raise MemoryValidationError('Memory requires only terms and facts')
     terms, facts = payload['terms'], payload['facts']
-    if not isinstance(terms, list) or len(terms) > 32 or not isinstance(facts, list) or len(facts) > 64:
+    if not isinstance(terms, list) or not isinstance(facts, list):
+        raise MemoryValidationError('Invalid memory arrays')
+    return terms, facts
+
+
+def selection_arrays(payload):
+    terms, facts = selection_shape(payload)
+    if len(terms) > MAX_TERMS or len(facts) > MAX_FACTS:
         raise MemoryValidationError('Invalid memory arrays or output budget')
     return terms, facts
 
@@ -113,7 +122,7 @@ def filter_selection(payload, sources):
     because that is indistinguishable from a selector that ignored the sources.
     """
     lookup = {s.id: s for s in sources}
-    terms, facts = selection_arrays(payload)
+    terms, facts = selection_shape(payload)
     kept_terms, kept_facts, rejections = [], [], []
     seen_terms, seen_facts = set(), set()
 
@@ -121,6 +130,15 @@ def filter_selection(payload, sources):
         rejections.append({'kind': kind, 'reason': reason,
                            'source_id': source_id if isinstance(source_id, str) else None,
                            'text': text[:120] if isinstance(text, str) else None})
+
+    # Overflowing the output budget is a long chapter, not a selector that ignored
+    # its sources: drop the excess and record it instead of failing the chapter.
+    if len(terms) > MAX_TERMS:
+        reject('term', 'Selection budget exceeded: %d terms dropped' % (len(terms) - MAX_TERMS), None)
+        terms = terms[:MAX_TERMS]
+    if len(facts) > MAX_FACTS:
+        reject('fact', 'Selection budget exceeded: %d facts dropped' % (len(facts) - MAX_FACTS), None)
+        facts = facts[:MAX_FACTS]
 
     for term in terms:
         rejection = term_rejection(term, lookup, seen_terms)
@@ -139,6 +157,8 @@ def filter_selection(payload, sources):
         kept_facts.append(sid)
     if (terms or facts) and not kept_terms and not kept_facts:
         raise MemoryValidationError(rejections[0]['reason'])
+    if len(kept_terms) > MAX_TERMS or len(kept_facts) > MAX_FACTS:
+        raise MemoryValidationError('Invalid memory arrays or output budget')
     return {'terms': kept_terms, 'facts': kept_facts}, rejections
 
 

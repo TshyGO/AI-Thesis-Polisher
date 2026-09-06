@@ -53,6 +53,21 @@ class CorpusTests(unittest.TestCase):
             load_corpus(path)
 
 
+class LongCorpusTests(unittest.TestCase):
+    PATH = Path(__file__).parent / 'benchmarks' / 'long_chapter_corpus.jsonl'
+
+    def test_long_corpus_is_one_chapter_with_neighbours_outside_a_batch(self):
+        texts, chapters, rows = load_corpus(self.PATH)
+        self.assertEqual(len(chapters), 1)
+        self.assertEqual((chapters[0]['start'], chapters[0]['end']), (1, len(texts)))
+        self.assertGreater(len(texts), 12)  # a size-6 batch cannot cover the chapter
+        self.assertTrue(any(row['seeded'] for row in rows))
+        self.assertTrue(any(not row['seeded'] for row in rows))
+        for row in rows:
+            for term in row['must_keep']:
+                self.assertIn(term, row['text'], row['order'])
+
+
 class MemoryDocumentTests(unittest.TestCase):
     SOURCE = 'The results shows that the capacity increased. A second sentence follows.'
 

@@ -133,6 +133,28 @@ class ChapterMemoryTests(unittest.TestCase):
                           'Fact must reference a source in this chapter chunk',
                           'Duplicate fact source'])
 
+    def test_an_over_budget_selection_is_trimmed_instead_of_failing_the_chapter(self):
+        _, snapshots, _, _ = self.fixture()
+        sources = tuple(s for p in snapshots for s in p.sentences)
+        payload = {'terms': [{'source_id': 'P1:S1', 'text': 'APTES', 'kind': 'abbreviation'}]
+                            + [{'source_id': 'P1:S1', 'text': 'reagent', 'kind': 'term'}] * 40,
+                   'facts': ['P1:S2'] * 70}
+        selection, rejections = parse_selection(json.dumps(payload), sources, salvage=True)
+        self.assertLessEqual(len(selection['terms']), 32)
+        self.assertLessEqual(len(selection['facts']), 64)
+        self.assertEqual(selection['facts'], ['P1:S2'])
+        self.assertEqual([term['text'] for term in selection['terms']], ['APTES', 'reagent'])
+        overflow = [r['reason'] for r in rejections if r['reason'].startswith('Selection budget exceeded')]
+        self.assertEqual(overflow, ['Selection budget exceeded: 9 terms dropped',
+                                    'Selection budget exceeded: 6 facts dropped'])
+
+    def test_a_cached_over_budget_selection_is_still_refused(self):
+        _, snapshots, _, _ = self.fixture()
+        sources = tuple(s for p in snapshots for s in p.sentences)
+        payload = {'terms': [{'source_id': 'P1:S1', 'text': 'APTES', 'kind': 'abbreviation'}] * 40, 'facts': []}
+        with self.assertRaises(MemoryValidationError):
+            parse_selection(json.dumps(payload), sources)
+
     def test_salvage_still_fails_when_nothing_proposed_is_grounded(self):
         _, snapshots, _, _ = self.fixture()
         sources = tuple(s for p in snapshots for s in p.sentences)

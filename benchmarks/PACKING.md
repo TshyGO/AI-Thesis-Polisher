@@ -78,6 +78,48 @@ repairs in three runs is enough to erase the prompt saving at this scale, and
 three runs cannot separate that from noise. Fewer calls is not automatically
 cheaper; only the size-6 group showed a token saving worth the name.
 
+## Long chapter: a real quality difference, and a correction
+
+The claim above — no quality difference — was measured at **paragraph**
+granularity on a corpus whose chapters a size-6 batch swallows whole. Both
+limits mattered. [long_chapter_corpus.jsonl](long_chapter_corpus.jsonl) is one
+chapter of 18 contiguous paragraphs, 43 sentences, 7 of them carrying seeded
+defects, so a size-6 batch has real neighbours outside it and paragraph-level
+counting can no longer hide a missed sentence inside an edited paragraph.
+
+| Configuration | Runs | Attempts | Tokens | Text factor | Stage s | Seeded-sentence edits per run | Other edits per run |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Size 1 | 7 | 27 | 35,329 | 3.76 | 164.4 | 13.71 | 0.14 |
+| Size 6 | 11 | 8 | 26,467 | 1.30 | 115.0 | 13.36 | 0.55 |
+
+70% fewer attempts, 25% fewer tokens, 30% less time — and the text factor is
+**1.30**, not 0.99, exactly as the caveat below predicted.
+
+Per-sentence comparison ([compare_runs.py](compare_runs.py)) shows the difference
+is not uniform. Three sentences diverge:
+
+| Sentence | Kind | Size 1 | Size 6 |
+| --- | --- | --- | --- |
+| P17:S2 | seeded verbosity ("It should be pointed out that…") | 7/7 | 5/11 |
+| P2:S2 | seeded agreement ("Aliquots was withdrawn") | 5/7 | 11/11 |
+| P3:S3 | clean; tense ("the mean is reported" → "was reported") | 1/7 | 6/11 |
+
+So packing became **more** reliable on a plain agreement error and **less**
+reliable on a verbosity fix, and it made a borderline tense overcorrection four
+times as often. Net seeded-sentence recall fell 2.6% (13.71 to 13.36 per run)
+while unlabelled edits rose from 0.14 to 0.55 per run.
+
+That is a real difference, not noise at the level of a single run: P17:S2 was
+edited in every unpacked run and in fewer than half the packed ones. The
+hypothesis — untested — is that with sixteen sentences in one call the editor
+attends to unambiguous grammatical errors and treats style more loosely. The
+tense edit is arguably wrong on its own terms: "was repeated … is reported" is
+normal academic usage, and "consistency" is the overcorrection reflex.
+
+None of this changes facts, numbers, citations or modality; the validators and
+the reviewer still gate every edit. But "no quality difference" was true only of
+the smaller fixture at coarser granularity, and it is retracted here.
+
 ### The 0.99 factor is specific to this fixture
 
 Both corpus chapters are exactly six paragraphs, so a size-6 batch covers a whole
@@ -88,19 +130,24 @@ between the size-3 and size-6 rows here, not at the bottom.
 
 ## Default stays at 1
 
-The evidence is 17 packed runs on a 12-paragraph synthetic fixture with clean prose and
-no tables, footnotes or complex formatting. That is enough to expose the control
-and recommend trying it; it is not enough to change what happens by default to
-someone's thesis. Raising the default needs a real document, long chapters and a
-human reading the diff.
+The long-chapter measurement is the reason this is not just caution. Packing
+buys a 70% cut in attempts and a 25% cut in tokens, and costs a small, real
+shift in which defects get caught. Whether that trade is worth taking depends on
+the document and the author, so it stays a decision the user makes, not one the
+tool makes for them. Raising the default needs a real document and a human
+reading the diff.
 
 The UI exposes “每次编辑调用打包的段落数”. Changing it invalidates cached
 suggestions, because it changes what the editor was asked.
 
 ## Boundaries
 
-- Synthetic, agent-labelled corpus. Zero missed defects here is label agreement
-  on 12 paragraphs, not an editing-quality result.
+- Synthetic, agent-labelled corpora. Recall figures are label agreement, not an
+  editing-quality result, and 7 and 11 runs cannot resolve small differences.
+- Paragraph-level counting hides a missed sentence inside an edited paragraph.
+  Compare configurations per sentence with `compare_runs.py`.
+- A run that lost a chapter is excluded from comparisons by default; including
+  it would blame packing for a chapter-memory failure.
 - Longer batches mean a longer single response. The contract still requires a
   decision for every supplied sentence, so a truncated answer fails the whole
   batch and falls back; it is never silently partial.

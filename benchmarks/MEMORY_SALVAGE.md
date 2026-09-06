@@ -47,6 +47,26 @@ first answer.
 | salvage-qwen v1–v5 | Qwen3-30B | 20–22 | 0 (10 builds) | 0 | 0 | 0 |
 | baseline v1–v5 (old code) | Qwen3-30B | 12–21 | 2 (10 builds) | n/a | 3 | 6 |
 
+## Live evidence, from a longer chapter
+
+The short fixture never exercised the salvage path. An 18-paragraph single
+chapter does. Across five runs on it, three dropped ungrounded selections — six
+items in total — and **no chapter was lost**. That is the live confirmation the
+runs above could not give.
+
+The same corpus also exposed a second failure with the same disproportionate
+blast radius. One run lost all eighteen paragraphs to
+`Invalid memory arrays or output budget`: the selector returned more than the
+32 permitted terms for a 43-sentence chapter. That is a long chapter, not a
+selector ignoring its sources, so overflow is now trimmed to the budget and
+recorded as a rejection with the dropped count, exactly like an ungrounded item.
+The strict path used for cached selections still refuses an over-budget array,
+because we never write one.
+
+The overflow is more likely the longer a chapter is — that is, on real theses
+rather than on fixtures. It did not recur in the five runs after the fix, so
+that fix is unit-tested and not yet demonstrated live either.
+
 ## Understanding-model comparison
 
 Five runs routed the understanding stage to `deepseek-ai/DeepSeek-V4-Flash`
@@ -77,6 +97,8 @@ with each run labelled by the engine code it ran against.
   rejected text. It stays local, like every other run artifact.
 - Memory cache files use a new shape and version, so previously cached chapter
   selections are simply not reused; they are re-requested once.
+- Budget overflow keeps the first 32 terms and first 64 facts. That choice is
+  deterministic, not a relevance ranking.
 
 ## Reproduce
 
