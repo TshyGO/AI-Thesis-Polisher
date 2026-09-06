@@ -23,7 +23,7 @@ class BoundedClient(LLMClient):
         return super().call_api(messages, temperature, timeout=90, max_retries=1)
 
 
-def main():
+def main(stage_clients_factory=None):
     run = Path(__file__).resolve().parents[1] / 'cache' / ('p1-word-live-' + uuid.uuid4().hex)
     run.mkdir(parents=True)
     source = run / 'source.docx'
@@ -36,6 +36,9 @@ def main():
         doc.doc.SaveAs2(str(source), FileFormat=16)
     source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
     client = BoundedClient(sys.stdin.read().strip(), 'https://api.siliconflow.cn/v1', 'deepseek-ai/DeepSeek-V4-Flash')
+    routes = stage_clients_factory(client) if stage_clients_factory else None
+    def request_count():
+        return sum(len(c.telemetry) for c in routes.values()) if routes else client.calls
     call_counts = []
     changes_per_run = []
     for n in (1, 2):
@@ -44,7 +47,7 @@ def main():
         with DocumentProcessor() as doc:
             pipeline = SentencePolishingPipeline(client, doc, {'language': 'english', 'min_chars': 1,
                 'intensity': 'light', 'original_filename': 'source.docx', 'protected_terms': ['APTES'],
-                'output_dir': str(run), 'excel_output_filename': f'report-{n}.xlsx', 'use_cross_review': True})
+                'output_dir': str(run), 'excel_output_filename': f'report-{n}.xlsx', 'use_cross_review': True}, stage_clients=routes)
             pipeline.cache_file = run / 'suggestions.json'
             pipeline.chapter_notes_dir = run / 'notes'
             pipeline.chapter_notes_dir.mkdir(exist_ok=True)
@@ -60,12 +63,13 @@ def main():
             assert doc.doc.Revisions.Count > 0
             assert doc.doc.Range(0, 3).Font.Bold == -1
         assert Path(report).exists()
-        call_counts.append(client.calls)
+        call_counts.append(request_count())
         changes_per_run.append(changes)
     assert call_counts[0] == call_counts[1], 'Replay unexpectedly called the API'
     assert changes_per_run[0] == changes_per_run[1]
     assert hashlib.sha256(source.read_bytes()).hexdigest() == source_hash
-    result = {'status': 'PASS', 'model': client.model, 'api_calls': client.calls,
+    result = {'status': 'PASS', 'model': client.model, 'api_calls': request_count(),
+              'stage_models': {s: c.model for s, c in routes.items()} if routes else {'shared': client.model},
               'replay_calls': 0, 'edited_sentences': changes_per_run[0], 'source_unchanged': True,
               'saved_Word_revisions_verified': True, 'artifacts': str(run)}
     (run / 'validation.json').write_text(json.dumps(result, indent=2), encoding='utf-8')

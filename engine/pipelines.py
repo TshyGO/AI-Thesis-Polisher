@@ -47,6 +47,12 @@ class PolishingPipeline:
     def _model_identity(self):
         return f"{getattr(self.client, 'base_url', '')}|{getattr(self.client, 'model', '')}"
 
+    def _chapter_client(self):
+        return self.client
+
+    def _chapter_model_identity(self):
+        return self._model_identity()
+
     def _prompt_customization(self) -> dict:
         return self.config.get("prompt_customization", {}) or {}
 
@@ -93,7 +99,7 @@ class PolishingPipeline:
         key = hashlib.md5(
             (
                 f"{self.PROMPT_VERSION}|{base_name}|{chapter_name}|{language}|"
-                f"{text_hash}|{self._prompt_customization_hash()}|{self._model_identity()}"
+                f"{text_hash}|{self._prompt_customization_hash()}|{self._chapter_model_identity()}"
             ).encode("utf-8")
         ).hexdigest()
         return self.chapter_notes_dir / f"{key}.txt"
@@ -258,7 +264,7 @@ class PolishingPipeline:
         """.strip()
         prompt = self._append_prompt_extra(prompt, self._get_prompt_extra("stage0"), language)
 
-        content = self.client.call_api(
+        content = self._chapter_client().call_api(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},

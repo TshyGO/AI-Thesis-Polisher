@@ -1,0 +1,12 @@
+{"id":"good01","original":"The results shows improved stability.","revised":"The results show improved stability.","expected_accept":true,"technical_risk":false,"tag":"agreement"}
+{"id":"good02","original":"We will measures the strength.","revised":"We will measure the strength.","expected_accept":true,"technical_risk":false,"tag":"modal_grammar"}
+{"id":"good03","original":"This is due to the fact that pores collapse.","revised":"This is because pores collapse.","expected_accept":true,"technical_risk":false,"tag":"wordiness"}
+{"id":"good04","original":"值得注意的是，该方法提高了测量精度。","revised":"该方法提高了测量精度。","expected_accept":true,"technical_risk":false,"tag":"filler"}
+{"id":"good05","original":"The samples was dried at 80 ℃.","revised":"The samples were dried at 80 ℃.","expected_accept":true,"technical_risk":false,"tag":"agreement_with_value"}
+{"id":"bad01","original":"The treatment could improve stability.","revised":"The treatment can improve stability.","expected_accept":false,"technical_risk":true,"tag":"modality"}
+{"id":"bad02","original":"The treatment did not increase strength.","revised":"The treatment increased strength.","expected_accept":false,"technical_risk":true,"tag":"negation"}
+{"id":"bad03","original":"The samples were dried at 80 ℃.","revised":"We dried the samples at 80 ℃.","expected_accept":false,"technical_risk":true,"tag":"invented_actor"}
+{"id":"bad04","original":"The results show improved stability.","revised":"The results demonstrate enhanced stability.","expected_accept":false,"technical_risk":false,"tag":"unnecessary_paraphrase"}
+{"id":"guard01","original":"The value was 0.021 W m−1 K−1.","revised":"The value was 0.031 W m−1 K−1.","expected_accept":false,"technical_risk":true,"tag":"number_guard"}
+{"id":"guard02","original":"O2 was stable.","revised":"N2 was stable.","expected_accept":false,"technical_risk":true,"tag":"formula_guard"}
+{"id":"guard03","original":"The trend agrees with [12].","revised":"The trend agrees with [13].","expected_accept":false,"technical_risk":true,"tag":"citation_guard"}
