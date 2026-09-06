@@ -222,7 +222,10 @@ class ChapterMemory:
 
     def context_for(self, snapshot, allowed_ids=None, budget=MAX_CONTEXT_CHARS):
         lookup = {s.id: s for s in self.sources}
-        targets = list(snapshot.sentences)
+        # One snapshot or several packed into one editor call; a paragraph snapshot
+        # exposes sentences, a batch is any iterable of them.
+        snapshots = [snapshot] if hasattr(snapshot, 'sentences') else list(snapshot)
+        targets = [sentence for item in snapshots for sentence in item.sentences]
         for source in targets:
             if source.id not in lookup or lookup[source.id] != source:
                 raise MemoryValidationError('Memory does not belong to this target source')

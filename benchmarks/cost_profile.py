@@ -202,6 +202,8 @@ def main():
     parser.add_argument('--reviewer-model', default=DEFAULTS['reviewer'])
     parser.add_argument('--review-mode', choices=('off', 'same', 'independent'), default='same')
     parser.add_argument('--max-requests', type=int, default=60)
+    parser.add_argument('--batch-size', type=int, default=1,
+                        help='consecutive paragraphs packed into one editor call')
     parser.add_argument('--label', default='baseline')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
@@ -230,6 +232,7 @@ def main():
     config = {'language': 'english', 'intensity': 'standard', 'min_chars': 20,
               'use_cross_review': args.review_mode != 'off', 'memory_mode': 'structured',
               'protected_terms': [], 'skipped_chapters': [], 'output_dir': str(run_root),
+              'editor_batch_size': args.batch_size,
               'excel_output_filename': 'Report.xlsx', 'original_filename': Path(args.corpus).name}
     pipeline = IsolatedPipeline(clients['editor'], document, config, stage_clients=clients)
     pipeline.isolate(run_root)
@@ -252,7 +255,8 @@ def main():
                    'seeded_paragraphs': sum(1 for row in rows if row.get('seeded'))},
         'config': {'models': {stage: overrides.get(stage, {}).get('model', args.editor_model) for stage in DEFAULTS},
                    'review_mode': args.review_mode, 'memory_mode': 'structured',
-                   'language': 'english', 'intensity': 'standard', 'max_requests': args.max_requests},
+                   'language': 'english', 'intensity': 'standard', 'max_requests': args.max_requests,
+                   'editor_batch_size': args.batch_size},
         'wall_seconds': round(time.monotonic() - started, 3),
         'changes_written': changes,
         'failure': failure,

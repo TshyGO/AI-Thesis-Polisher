@@ -243,6 +243,10 @@ if uploaded_file is not None and api_key:
             }[x],
         )
         min_chars = st.number_input("忽略过短的段落 (最小字符数)", value=20, min_value=1, help="低于此字数的段落（如图注、短标题）将被直接跳过")
+        editor_batch_size = st.number_input(
+            "每次编辑调用打包的段落数", value=int(user_cfg.get('editor_batch_size', 1)), min_value=1, max_value=12,
+            help="连续同章节段落合并为一次调用，减少重复发送的上下文。写回仍按段独立进行；"
+                 "整批失败会自动退回逐段调用。改动此值会使已有建议缓存失效。")
 
     with col2:
         st.subheader("🔧 复审与输出")
@@ -333,6 +337,7 @@ if uploaded_file is not None and api_key:
                         "language": language_mode,
                         "intensity": intensity,
                         "min_chars": int(min_chars),
+                        "editor_batch_size": int(editor_batch_size),
                         'protected_terms': protected_terms,
                         "use_cross_review": use_cross_review,
                         "skipped_chapters": skipped_chapters,
@@ -372,6 +377,7 @@ if uploaded_file is not None and api_key:
             update_config({
                 "output_root": normalized_output_root,
                 'protected_terms': protected_terms,
+                'editor_batch_size': int(editor_batch_size),
                 "prompt_customization": {
                     "stage0": stage0_extra,
                     "stage1": stage1_extra,
