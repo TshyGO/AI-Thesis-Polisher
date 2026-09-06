@@ -4,6 +4,13 @@ from engine.document import DocumentProcessor
 
 
 class WordSentenceTests(unittest.TestCase):
+    def test_table_paragraph_is_explicitly_blocked(self):
+        with DocumentProcessor() as processor:
+            processor.doc = processor.word.Documents.Add()
+            table = processor.doc.Tables.Add(processor.doc.Range(0, 0), 1, 1)
+            table.Cell(1, 1).Range.Text = 'A cell.'
+            self.assertTrue(processor.snapshot_paragraph(1).blocked_reason.startswith('TABLE_PARAGRAPH'))
+
     def test_exact_word_ranges_and_existing_revision_detection(self):
         with DocumentProcessor() as processor:
             processor.doc = processor.word.Documents.Add()

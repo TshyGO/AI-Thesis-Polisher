@@ -30,7 +30,7 @@ def main():
     edits = [d for d in proposed if d.decision == 'edit']
     reviewed = client.call_sentence_api([{'role': 'user', 'content':
         'Review only these proposed edits. Keep decision rejects; edit retains the EXACT proposed revised_sentence. '
-        + json.dumps({'source': samples, 'proposals': [asdict(d) for d in edits]}, ensure_ascii=False)}], [d.sentence_id for d in edits]) if edits else []
+        + json.dumps({'source': {d.sentence_id: samples[d.sentence_id] for d in edits}, 'proposals': [asdict(d) for d in edits]}, ensure_ascii=False)}], [d.sentence_id for d in edits]) if edits else []
     validate_review(edits, reviewed)
     for decision in reviewed:
         if decision.decision == 'edit':

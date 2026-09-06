@@ -1,6 +1,7 @@
 import unittest
 import json
 from unittest.mock import Mock
+from dataclasses import FrozenInstanceError
 from engine.sentences import SentenceSegmenter, ParagraphSnapshot, utf16_length
 from engine.revision_contract import parse_decisions, validate_review
 from engine.llm_client import LLMClient, ModelFormatError
@@ -34,6 +35,14 @@ class SentenceTests(unittest.TestCase):
         snapshot = ParagraphSnapshot(2, 'A sentence.')
         with self.assertRaises(ValueError):
             snapshot.sentences[0].word_bounds('Different.', 0)
+        with self.assertRaises(FrozenInstanceError):
+            snapshot.text = 'Changed'
+        with self.assertRaises(FrozenInstanceError):
+            snapshot.sentences[0].start = 99
+
+    def test_degree_abbreviations(self):
+        self.assertEqual([s.text for s in SentenceSegmenter().segment('She has an M.Sc. degree. Next.')],
+                         ['She has an M.Sc. degree.', 'Next.'])
 
 
 class ContractTests(unittest.TestCase):
