@@ -24,6 +24,7 @@ class WordSentenceTests(unittest.TestCase):
         with DocumentProcessor() as processor:
             processor.doc = processor.word.Documents.Add()
             processor.doc.Content.Text = 'Alpha is slow.\r'
+            before_text = processor.doc.Content.Text
             snapshot = processor.snapshot_paragraph(1)
             processor.doc.TrackRevisions = True
             original_assign = processor._assign_patch
@@ -38,7 +39,7 @@ class WordSentenceTests(unittest.TestCase):
                 SentenceDecision('P1:S1', 'edit', 'grammar', 'Alpha was fast.', 'grammar', 1)])
             self.assertFalse(result.ok)
             self.assertTrue(result.reason.startswith('ROLLED_BACK'), result.reason)
-            self.assertEqual(processor.doc.Content.Text, 'Alpha is slow.\r')
+            self.assertEqual(processor.doc.Content.Text, before_text)
             self.assertEqual(processor.doc.Revisions.Count, 0)
 
     def test_table_paragraph_is_explicitly_blocked(self):

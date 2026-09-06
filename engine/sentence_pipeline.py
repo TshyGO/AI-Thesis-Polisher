@@ -1,0 +1,153 @@
+"""P1 production path: full-sentence decisions -> validated diff -> atomic Word."""
+import hashlib
+import json
+from dataclasses import asdict
+from pathlib import Path
+from engine.pipelines import PolishingPipeline
+from engine.llm_client import ModelError
+from engine.revision_contract import parse_decisions, validate_review
+from engine.patches import sentence_patch_plan, PatchRollbackError
+from engine.excel_exporter import ExcelExporter
+
+
+def decision_payload(decision):
+    return {key: value for key, value in asdict(decision).items() if value is not None}
+
+
+class SentencePolishingPipeline(PolishingPipeline):
+    PROMPT_VERSION = 'p1-full-sentence-v1'
+
+    def _decide(self, snapshot, notes, neighbors):
+        payload = {
+            'chapter_notes': notes, 'context': neighbors,
+            'sentences': [{'sentence_id': s.id, 'text': s.text} for s in snapshot.sentences],
+            'protected_terms': self.config.get('protected_terms', []),
+            'intensity': self.config.get('intensity', 'standard'),
+        }
+        policy = ('Edit conservatively and only for a genuine improvement. Preserve facts, numbers, units, '
+                  'citations, terminology, negation and modality (could/may/must). Keep normal experimental '
+                  'passives. Do not invent context or add experimental facts. Review only the supplied sentences. '
+                  + self._get_prompt_extra('stage1'))
+        return self.client.call_sentence_api([
+            {'role': 'system', 'content': policy},
+            {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)},
+        ], [s.id for s in snapshot.sentences])
+
+    def _review(self, snapshot, proposals, notes):
+        originals = {s.id: s.text for s in snapshot.sentences}
+        payload = {'chapter_notes': notes,
+                   'source': {d.sentence_id: originals[d.sentence_id] for d in proposals},
+                   'proposals': [decision_payload(d) for d in proposals]}
+        return self.client.call_sentence_api([
+            {'role': 'system', 'content': 'Review only the nominated sentences. KEEP rejects a proposal; '
+             'EDIT retains its EXACT revised_sentence. Never invent a new revision. Reject pointless paraphrases '
+             'and any changes to facts, modality, negation or normal experimental passives. ' + self._get_prompt_extra('stage2')},
+            {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)},
+        ], [d.sentence_id for d in proposals])
+
+    def process_document(self, doc_path, progress_callback=None):
+        self.document_hash = hashlib.sha256(Path(doc_path).read_bytes()).hexdigest()
+        self.last_records = []
+        output = Path(self.config.get('output_dir') or Path(doc_path).parent)
+        output.mkdir(parents=True, exist_ok=True)
+        report = output / self.config.get('excel_output_filename', 'Report.xlsx')
+        cache = self.load_cache()
+        chapters = []
+        opened = unsafe = False
+        changes = 0
+        try:
+            self.doc_parser.open_document(doc_path, read_only=False, track_revisions=True)
+            opened = True
+            snapshots = [self.doc_parser.snapshot_paragraph(n) for n in range(1, self.doc_parser.get_total_paragraphs()+1)]
+            chapters = self.doc_parser.parse_chapters() or [{'name': '全文', 'start': 1, 'end': len(snapshots)}]
+            texts = {s.index: s.text for s in snapshots}
+            notes = {}
+            for snapshot in snapshots:
+                index = snapshot.index
+                if progress_callback:
+                    progress_callback(index, len(snapshots))
+                chapter = next((c for c in chapters if c['start'] <= index <= c['end']), chapters[-1])
+                if chapter['name'] in self.config.get('skipped_chapters', []):
+                    continue
+                if snapshot.blocked_reason:
+                    self.last_records.append({'chapter': chapter['name'], 'paragraph_idx': index, 'sentence': snapshot.text,
+                                              'status': 'SKIPPED_UNSUPPORTED', 'reason': snapshot.blocked_reason})
+                    continue
+                if not snapshot.sentences or self.should_skip_paragraph(snapshot.text, self.config.get('min_chars', 20), self.config.get('language', 'chinese')):
+                    continue
+                key = self.get_cache_key(doc_path, index, snapshot.text)
+                try:
+                    chapter_key = (chapter['start'], chapter['end'])
+                    if chapter_key not in notes:
+                        notes[chapter_key] = self.run_stage_0_chapter_understanding(chapter['name'], self._build_chapter_text(chapter, texts), self.config.get('language', 'chinese'))
+                    entry = cache.get(key, {})
+                    if not isinstance(entry, dict):
+                        entry = {}
+                    neighbors = '\n'.join(texts.get(n, '') for n in (index-2, index-1, index+1))
+                    payload = entry.get('proposed')
+                    if payload is None:
+                        payload = [decision_payload(d) for d in self._decide(snapshot, notes[chapter_key], neighbors)]
+                    decisions = parse_decisions(json.dumps(payload), [s.id for s in snapshot.sentences])
+                    originals = {s.id: s.text for s in snapshot.sentences}
+                    record_by_id = {}
+                    candidates = []
+                    for decision in decisions:
+                        record = {'chapter': chapter['name'], 'paragraph_idx': index, 'sentence_id': decision.sentence_id,
+                                  'sentence': originals[decision.sentence_id], 'reason': decision.reason,
+                                  'old': '', 'new': '', 'result_sentence': originals[decision.sentence_id],
+                                  'status': 'KEEP', 'priority': decision.category or ''}
+                        record_by_id[decision.sentence_id] = record
+                        if decision.decision == 'edit':
+                            record.update(old=originals[decision.sentence_id], new=decision.revised_sentence)
+                            try:
+                                sentence_patch_plan(snapshot, [decision], self.config.get('protected_terms', []))
+                                candidates.append(decision)
+                            except ValueError as rejection:
+                                record.update(status='VALIDATION_REJECTED', reason=str(rejection))
+                    if candidates and self.config.get('use_cross_review', True):
+                        review_payload = entry.get('reviewed')
+                        if review_payload is None:
+                            review_payload = [decision_payload(d) for d in self._review(snapshot, candidates, notes[chapter_key])]
+                        reviewed = parse_decisions(json.dumps(review_payload), [d.sentence_id for d in candidates])
+                        validate_review(candidates, reviewed)
+                    else:
+                        reviewed = candidates
+                    cache[key] = {'proposed': payload, 'reviewed': [decision_payload(d) for d in reviewed]}
+                    self.save_cache(cache)  # suggestions survive a crash; never means Word was written
+                    approved = [d for d in reviewed if d.decision == 'edit']
+                    for decision in reviewed:
+                        if decision.decision == 'keep':
+                            record_by_id[decision.sentence_id].update(status='REVIEW_REJECTED', reason=decision.reason)
+                    if approved:
+                        result = self.doc_parser.apply_sentence_revisions(snapshot, approved, self.config.get('protected_terms', []))
+                        for decision in approved:
+                            record_by_id[decision.sentence_id].update(
+                                status='EDIT_WRITTEN' if result.ok else 'PATCH_FAILED',
+                                reason=decision.reason if result.ok else result.reason,
+                                result_sentence=decision.revised_sentence if result.ok else originals[decision.sentence_id])
+                        if result.ok:
+                            changes += len(approved)
+                    self.last_records.extend(record_by_id.values())
+                except PatchRollbackError:
+                    raise
+                except Exception as error:
+                    cache.pop(key, None)
+                    self.last_records.append({'chapter': chapter['name'], 'paragraph_idx': index, 'sentence': snapshot.text,
+                                              'status': error.status if isinstance(error, ModelError) else 'PROCESSING_ERROR',
+                                              'reason': str(error) if isinstance(error, ModelError) else type(error).__name__})
+        except PatchRollbackError:
+            unsafe = True
+            for record in self.last_records:
+                if record['status'] == 'EDIT_WRITTEN':
+                    record.update(status='RUN_ABORTED', result_sentence=record['sentence'], reason='Output discarded; rollback not verified')
+            raise
+        finally:
+            # No incremental Word saves: a fatal rollback failure can discard the whole in-memory output.
+            try:
+                if opened and not unsafe:
+                    self.doc_parser.save()
+            finally:
+                self.save_cache(cache)
+                if not ExcelExporter().export(str(report), self.last_records, chapters=chapters):
+                    raise RuntimeError('Report export failed')
+        return changes, str(report)

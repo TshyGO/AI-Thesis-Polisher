@@ -1,12 +1,16 @@
 import unittest
 import json
+import uuid
+from pathlib import Path
 from unittest.mock import Mock
 from dataclasses import FrozenInstanceError
 from engine.sentences import SentenceSegmenter, ParagraphSnapshot, utf16_length
 from engine.revision_contract import parse_decisions, validate_review
 from engine.llm_client import LLMClient, ModelFormatError
 from engine.patches import sentence_patch_plan
+from engine.patches import PatchResult, PatchRollbackError
 from engine.revision_contract import SentenceDecision
+from engine.sentence_pipeline import SentencePolishingPipeline
 
 
 class SentenceTests(unittest.TestCase):
@@ -101,6 +105,82 @@ class PatchPlanTests(unittest.TestCase):
             SentenceDecision('P1:S1', 'edit', 'x', '😀 A good result.', 'grammar', 1),
             SentenceDecision('P1:S2', 'edit', 'x', '', 'wordiness', 1)])
         self.assertEqual(expected, '😀 A good result. ')
+
+
+class MemoryDocument:
+    def __init__(self):
+        self.original = {1: 'Alpha is slow. Alpha is slow.', 2: 'O2 was stable.'}
+        self.current = self.original.copy()
+        self.save_calls = 0
+    def open_document(self, *args, **kwargs):
+        pass
+    def get_total_paragraphs(self):
+        return len(self.original)
+    def parse_chapters(self):
+        return [{'name': 'test', 'start': 1, 'end': 2}]
+    def snapshot_paragraph(self, index):
+        return ParagraphSnapshot(index, self.original[index])
+    def save(self):
+        self.save_calls += 1
+    def apply_sentence_revisions(self, snapshot, decisions, protected_terms=()):
+        patches, expected = sentence_patch_plan(snapshot, decisions, protected_terms)
+        self.current[snapshot.index] = expected
+        return PatchResult(True, patch_count=len(patches))
+
+
+class SentencePipelineTests(unittest.TestCase):
+    def make_pipeline(self):
+        root = Path(__file__).parent / 'cache' / 'p1-tests' / uuid.uuid4().hex
+        root.mkdir(parents=True)
+        source = root / 'synthetic.docx'
+        source.write_bytes(b'synthetic source')
+        client = Mock(model='fake', base_url='fake')
+        client.call_api.return_value = 'Synthetic grammar examples.'
+        def decide(messages, expected_ids):
+            return [SentenceDecision(sid, 'edit', 'fix', 'Alpha was fast.', 'grammar', 1)
+                    if sid == 'P1:S2' else SentenceDecision(sid, 'keep', 'fine') for sid in expected_ids]
+        client.call_sentence_api.side_effect = decide
+        document = MemoryDocument()
+        pipeline = SentencePolishingPipeline(client, document, {'language': 'english', 'min_chars': 1, 'output_dir': str(root), 'use_cross_review': True})
+        pipeline.cache_file = root / 'cache.json'
+        pipeline.chapter_notes_dir = root / 'notes'
+        pipeline.chapter_notes_dir.mkdir()
+        return source, pipeline, client, document
+
+    def test_pipeline_replays_full_sentence_suggestions_and_actual_report(self):
+        source, pipeline, client, document = self.make_pipeline()
+        changes, _ = pipeline.process_document(str(source))
+        self.assertEqual(changes, 1)
+        self.assertEqual(document.current[1], 'Alpha is slow. Alpha was fast.')
+        self.assertEqual(pipeline.last_records[1]['result_sentence'], 'Alpha was fast.')
+        calls = client.call_sentence_api.call_count
+        document.current = document.original.copy()
+        self.assertEqual(pipeline.process_document(str(source))[0], 1)
+        self.assertEqual(client.call_sentence_api.call_count, calls)
+        self.assertEqual(len(pipeline.last_records), 3)
+
+    def test_format_error_is_not_keep(self):
+        source, pipeline, client, document = self.make_pipeline()
+        client.call_sentence_api.side_effect = None
+        client.call_sentence_api.return_value = []
+        pipeline.process_document(str(source))
+        self.assertTrue(all(r['status'] == 'MODEL_FORMAT_ERROR' for r in pipeline.last_records))
+        self.assertEqual(document.current, document.original)
+
+    def test_unverified_rollback_never_saves(self):
+        source, pipeline, _, document = self.make_pipeline()
+        document.apply_sentence_revisions = Mock(side_effect=PatchRollbackError('injected'))
+        with self.assertRaises(PatchRollbackError):
+            pipeline.process_document(str(source))
+        self.assertEqual(document.save_calls, 0)
+
+    def test_patch_failure_report_contains_original_not_proposal(self):
+        source, pipeline, _, document = self.make_pipeline()
+        document.apply_sentence_revisions = Mock(return_value=PatchResult(False, 'injected'))
+        pipeline.process_document(str(source))
+        record = pipeline.last_records[1]
+        self.assertEqual(record['status'], 'PATCH_FAILED')
+        self.assertEqual(record['result_sentence'], 'Alpha is slow.')
 
 
 if __name__ == '__main__':
