@@ -143,6 +143,18 @@ class DocumentProcessor:
         font = range_.Font
         if font.Superscript != 0 or font.Subscript != 0 or font.Hidden != 0:
             return False
+        # Font exposes only a subset of character formatting. Compare full rPr
+        # (highlight, language, character style, spacing, etc.) across source runs.
+        root = ET.fromstring(range_.WordOpenXML)
+        word_ns = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+        properties = set()
+        for run in root.findall('.//' + word_ns + 'body//' + word_ns + 'r'):
+            if not any(child.tag == word_ns + 't' and child.text for child in run):
+                continue
+            rpr = run.find(word_ns + 'rPr')
+            properties.add(ET.tostring(rpr, encoding='unicode') if rpr is not None and len(rpr) else '')
+        if len(properties) > 1:
+            return False
         return all(getattr(font, name) not in (9999999, '', None)
                    for name in ('Bold', 'Italic', 'Underline', 'Name', 'Size', 'Color',
                                 'StrikeThrough', 'DoubleStrikeThrough', 'SmallCaps',

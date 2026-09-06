@@ -18,10 +18,11 @@ have regression cases; segmentation is conservative, not a complete NLP parser.
 - 36 offline tests pass: P0 regressions plus segmentation, immutable mapping,
   coverage/schema errors, review integrity, deterministic patch plans, replay,
   actual-result reporting and fatal-rollback no-save behavior.
-- 7 real Word tests pass: exact UTF-16 ranges, tables/existing revisions,
+- 8 real Word tests pass: exact UTF-16 ranges, tables/existing revisions,
   repeated sentences/multiple changes, saved Unicode text and bold formatting,
   stale snapshots and bookmarks, injected mutation failure, injected final-text
-  verification failure. Undo is verified against content/format XML after
+  verification failure, mixed highlighting/language rejection. Full character
+  run properties are compared before replacement. Undo is verified against content/format XML after
   excluding volatile editor IDs, spellcheck annotations and rendered page breaks.
 - SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` protocol smoke: 2 calls passed
   nomination and exact-proposal review on three synthetic sentences.

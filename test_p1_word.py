@@ -7,6 +7,22 @@ from engine.revision_contract import SentenceDecision
 
 
 class WordSentenceTests(unittest.TestCase):
+    def test_mixed_highlight_and_language_are_not_flattened(self):
+        for property_name, value in [('HighlightColorIndex', 7), ('LanguageID', 1036)]:
+            with self.subTest(property_name=property_name), DocumentProcessor() as processor:
+                processor.doc = processor.word.Documents.Add()
+                processor.doc.Content.Text = 'abcdef.\r'
+                setattr(processor.doc.Range(3, 6), property_name, value)
+                snapshot = processor.snapshot_paragraph(1)
+                before = processor.doc.Content.Text
+                processor.doc.TrackRevisions = True
+                result = processor.apply_sentence_revisions(snapshot, [
+                    SentenceDecision('P1:S1', 'edit', 'clarity', 'uvwxyz.', 'clarity', 1)])
+                self.assertFalse(result.ok)
+                self.assertEqual(result.reason, 'UNSAFE_OR_MIXED_FORMATTING')
+                self.assertEqual(processor.doc.Content.Text, before)
+                self.assertEqual(processor.doc.Revisions.Count, 0)
+
     def test_saved_unicode_insertions_preserve_bold_and_revisions(self):
         path = Path(__file__).parent / 'cache' / ('p1-unicode-' + uuid.uuid4().hex + '.docx')
         path.parent.mkdir(exist_ok=True)
