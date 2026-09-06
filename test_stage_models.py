@@ -64,10 +64,11 @@ class StageModelTests(unittest.TestCase):
         clients = build_stage_clients(self.base(), {'reviewer': {'model': 'other'}}, 'independent')
         for client in clients.values():
             client.call_api = Mock(return_value='notes')
+            client.call_memory_api = Mock(return_value={'terms': [], 'facts': []})
             client.call_sentence_api = Mock(side_effect=old_client.call_sentence_api.side_effect)
         pipeline.stage_clients = clients
         pipeline.process_document(str(source))
-        clients['understanding'].call_api.assert_called_once()
+        clients['understanding'].call_memory_api.assert_called_once()
         self.assertEqual(clients['editor'].call_sentence_api.call_count, 2)
         clients['reviewer'].call_sentence_api.assert_called_once()
         self.assertNotIn('PRIVATE_KEY', (source.parent / 'Run.json').read_text(encoding='utf-8'))

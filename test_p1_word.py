@@ -1,12 +1,40 @@
 """Explicit real Word tests. Only disposable synthetic documents are opened."""
 import unittest
 import uuid
+import json
+import hashlib
 from pathlib import Path
+from unittest.mock import Mock
 from engine.document import DocumentProcessor
 from engine.revision_contract import SentenceDecision
+from engine.chapter_memory import build_memory, MemoryValidationError
 
 
 class WordSentenceTests(unittest.TestCase):
+    def test_real_heading_scopes_keep_memory_sources_separate(self):
+        root = Path(__file__).parent / 'cache' / ('word-memory-' + uuid.uuid4().hex)
+        with DocumentProcessor() as processor:
+            processor.doc = processor.word.Documents.Add()
+            processor.doc.Content.Text = ('Experiment A\rAPTES is reagent A.\rThe APTES samples was cured.\r'
+                                          'Experiment B\rAPTES is reagent B.\rThe APTES sample were cured.\r')
+            processor.doc.Paragraphs(1).OutlineLevel = 1
+            processor.doc.Paragraphs(4).OutlineLevel = 1
+            chapters = processor.parse_chapters()
+            self.assertEqual([c['start'] for c in chapters], [1, 4])
+            snapshots = [processor.snapshot_paragraph(n) for n in range(1, processor.get_total_paragraphs()+1)]
+            client = Mock()
+            client.call_memory_api.side_effect = lambda messages, sources: {
+                'terms': [{'source_id': s.id, 'text': 'APTES', 'kind': 'abbreviation'} for s in sources if s.text.startswith('APTES')],
+                'facts': [s.id for s in sources]}
+            digest = hashlib.sha256(processor.doc.Content.Text.encode('utf-8')).hexdigest()
+            memories = [build_memory(c, [s for s in snapshots if c['start'] <= s.index <= c['end']],
+                                     digest, client, 'fake', root) for c in chapters]
+            context = json.dumps(memories[1].context_for(snapshots[5]))
+            self.assertIn('reagent B', context)
+            self.assertNotIn('reagent A', context)
+            with self.assertRaises(MemoryValidationError):
+                memories[0].context_for(snapshots[5])
+
     def test_mixed_highlight_and_language_are_not_flattened(self):
         for property_name, value in [('HighlightColorIndex', 7), ('LanguageID', 1036)]:
             with self.subTest(property_name=property_name), DocumentProcessor() as processor:

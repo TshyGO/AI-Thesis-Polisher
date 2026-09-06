@@ -258,6 +258,9 @@ if uploaded_file is not None and api_key:
         st.text_input("本次输出根目录", value=output_root, disabled=True, help="如需修改，请到左侧设置区更改")
 
     with st.expander("🧠 Prompt 自定义", expanded=False):
+        protected_text = st.text_area('明确保护术语（每行一个）', value='\n'.join(user_cfg.get('protected_terms', [])),
+            help='这些词由程序保护；模型不能自行取消。留空仍保留数值、单位、引用等内置保护。')
+        protected_terms = list(dict.fromkeys(term.strip() for term in protected_text.splitlines() if term.strip()))
         st.caption("现在不是完全黑箱了。内置 Prompt 仍保留，下面三栏会追加到对应 Stage 的 Prompt 末尾。这样更稳，也足够让你定规则。")
         stage0_extra = st.text_area(
             "Stage 0 章节理解附加要求",
@@ -282,6 +285,7 @@ if uploaded_file is not None and api_key:
         with prompt_col1:
             if st.button("💾 保存 Prompt 自定义"):
                 update_config({
+                    'protected_terms': protected_terms,
                     "prompt_customization": {
                         "stage0": stage0_extra,
                         "stage1": stage1_extra,
@@ -329,6 +333,7 @@ if uploaded_file is not None and api_key:
                         "language": language_mode,
                         "intensity": intensity,
                         "min_chars": int(min_chars),
+                        'protected_terms': protected_terms,
                         "use_cross_review": use_cross_review,
                         "skipped_chapters": skipped_chapters,
                         "original_filename": uploaded_file.name,
@@ -356,10 +361,14 @@ if uploaded_file is not None and api_key:
             persist_result_to_session(word_output_path, excel_path)
             with st.expander('本次模型路由与调用记录'):
                 st.json(pipeline.run_summary)
+            partial_memory = pipeline.run_summary.get('memory', {}).get('partial_chapters', 0)
+            if partial_memory:
+                st.warning(f'{partial_memory} 个章节的记忆因输入预算而仅部分覆盖；原文仍按段处理，详情见 ChapterMemory.json。')
             st.session_state["last_output_dir"] = run_output_dir
 
             update_config({
                 "output_root": normalized_output_root,
+                'protected_terms': protected_terms,
                 "prompt_customization": {
                     "stage0": stage0_extra,
                     "stage1": stage1_extra,
