@@ -1,10 +1,63 @@
 """Explicit real Word tests. Only disposable synthetic documents are opened."""
 import unittest
+import uuid
+from pathlib import Path
 from engine.document import DocumentProcessor
 from engine.revision_contract import SentenceDecision
 
 
 class WordSentenceTests(unittest.TestCase):
+    def test_saved_unicode_insertions_preserve_bold_and_revisions(self):
+        path = Path(__file__).parent / 'cache' / ('p1-unicode-' + uuid.uuid4().hex + '.docx')
+        path.parent.mkdir(exist_ok=True)
+        with DocumentProcessor() as processor:
+            processor.doc = processor.word.Documents.Add()
+            processor.doc.Content.Text = '😀 The result is good.\r'
+            processor.doc.Content.Font.Bold = True
+            snapshot = processor.snapshot_paragraph(1)
+            processor.doc.TrackRevisions = True
+            result = processor.apply_sentence_revisions(snapshot, [
+                SentenceDecision('P1:S1', 'edit', 'grammar', '😀 The result was very good.', 'grammar', 1)])
+            self.assertTrue(result.ok, result.reason)
+            processor.doc.SaveAs2(str(path.resolve()), FileFormat=16)
+        with DocumentProcessor() as processor:
+            processor.open_document(str(path), read_only=True)
+            self.assertEqual(processor._visible_paragraph_text(1), '😀 The result was very good.')
+            self.assertGreater(processor.doc.Revisions.Count, 0)
+            self.assertEqual(processor.doc.Range(3, 6).Font.Bold, -1)
+
+    def test_stale_source_and_bookmarks_fail_without_mutation(self):
+        with DocumentProcessor() as processor:
+            processor.doc = processor.word.Documents.Add()
+            processor.doc.Content.Text = 'Alpha is slow.\r'
+            stale = processor.snapshot_paragraph(1)
+            processor.doc.Range(0, 5).Text = 'Other'
+            processor.doc.TrackRevisions = True
+            edit = SentenceDecision('P1:S1', 'edit', 'grammar', 'Alpha was fast.', 'grammar', 1)
+            self.assertEqual(processor.apply_sentence_revisions(stale, [edit]).reason, 'STALE_SOURCE')
+            processor.doc.TrackRevisions = False
+            processor.doc.Bookmarks.Add('protected', processor.doc.Range(0, 5))
+            snapshot = processor.snapshot_paragraph(1)
+            processor.doc.TrackRevisions = True
+            result = processor.apply_sentence_revisions(snapshot, [SentenceDecision('P1:S1', 'edit', 'grammar', 'Other was fast.', 'grammar', 1)])
+            self.assertTrue(result.reason.startswith('STRUCTURAL_CONTENT'), result.reason)
+            self.assertEqual(processor.doc.Revisions.Count, 0)
+
+    def test_final_text_verification_failure_rolls_back(self):
+        with DocumentProcessor() as processor:
+            processor.doc = processor.word.Documents.Add()
+            processor.doc.Content.Text = 'Alpha is slow.\r'
+            before = processor.doc.Content.Text
+            snapshot = processor.snapshot_paragraph(1)
+            processor.doc.TrackRevisions = True
+            processor._visible_paragraph_text = lambda index: 'incorrect projection'
+            result = processor.apply_sentence_revisions(snapshot, [
+                SentenceDecision('P1:S1', 'edit', 'grammar', 'Alpha was fast.', 'grammar', 1)])
+            self.assertFalse(result.ok)
+            self.assertTrue(result.reason.startswith('ROLLED_BACK'), result.reason)
+            self.assertEqual(processor.doc.Content.Text, before)
+            self.assertEqual(processor.doc.Revisions.Count, 0)
+
     def test_multi_patch_repeated_sentence_and_format_preservation(self):
         with DocumentProcessor() as processor:
             processor.doc = processor.word.Documents.Add()
