@@ -178,6 +178,9 @@ ui/
 python -m unittest test_pipeline_regressions test_p0
 # 单独运行，会启动本机 Word，仅创建合成测试文件：
 python -m unittest test_p0_word_integration
+# P1 纯逻辑测试，以及本机真实 Word 测试（GitHub hosted runner 不安装 Word）：
+python -m unittest test_p1
+python -m unittest test_p1_word
 ```
 
 - 依赖本机可用的 Microsoft Word

@@ -3,6 +3,7 @@ import re
 import logging
 import pythoncom
 import win32com.client
+from engine.sentences import ParagraphSnapshot
 
 class DocumentProcessor:
     """
@@ -101,6 +102,21 @@ class DocumentProcessor:
             return self.doc.Paragraphs.Count
         except:
             return 0
+
+    def snapshot_paragraph(self, index: int) -> ParagraphSnapshot:
+        """Read exact source text; no strip/control-character normalisation."""
+        paragraph_range = self.doc.Paragraphs(index).Range.Duplicate
+        text = paragraph_range.Text
+        if text.endswith("\r\x07"):
+            text = text[:-2]
+        elif text.endswith("\r"):
+            text = text[:-1]
+        blocked = ""
+        if paragraph_range.Revisions.Count:
+            blocked = "EXISTING_REVISIONS: accept/reject existing revisions in a separate copy first"
+        if paragraph_range.Information(12):  # wdWithInTable
+            blocked = "TABLE_PARAGRAPH: table cell patching is not supported yet"
+        return ParagraphSnapshot(index, text, paragraph_range.Start, blocked)
 
     def _load_text_cache(self):
         """一次性 O(N) 读取所有段落文本到内存，替代无数次 O(N^2) COM 跨进程索引通讯"""
