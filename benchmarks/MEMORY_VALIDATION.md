@@ -108,3 +108,12 @@ existing `benchmarks.stage_word_live` helper (at most 8 attempts). The UI defaul
 to structured memory; `memory_mode=legacy` is an explicit developer comparison
 option, not an automatic fallback. Batch triage, a complete hierarchical document
 tree, semantic-fact verification and UI redesign remain outside this change.
+
+## Superseded boundary: failure radius
+
+The statement above — "If still invalid, the chapter reports an error" — now
+applies only when **every** proposed selection is unverifiable. A single
+ungrounded item is dropped and recorded instead of failing the chapter. Cached
+selections are still validated strictly. See
+[MEMORY_SALVAGE.md](MEMORY_SALVAGE.md) for the change, its live limits and the
+understanding-model cost comparison.

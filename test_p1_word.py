@@ -23,9 +23,9 @@ class WordSentenceTests(unittest.TestCase):
             self.assertEqual([c['start'] for c in chapters], [1, 4])
             snapshots = [processor.snapshot_paragraph(n) for n in range(1, processor.get_total_paragraphs()+1)]
             client = Mock()
-            client.call_memory_api.side_effect = lambda messages, sources: {
+            client.call_memory_api.side_effect = lambda messages, sources: ({
                 'terms': [{'source_id': s.id, 'text': 'APTES', 'kind': 'abbreviation'} for s in sources if s.text.startswith('APTES')],
-                'facts': [s.id for s in sources]}
+                'facts': [s.id for s in sources]}, [])
             digest = hashlib.sha256(processor.doc.Content.Text.encode('utf-8')).hexdigest()
             memories = [build_memory(c, [s for s in snapshots if c['start'] <= s.index <= c['end']],
                                      digest, client, 'fake', root) for c in chapters]

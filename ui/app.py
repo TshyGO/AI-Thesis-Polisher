@@ -364,6 +364,9 @@ if uploaded_file is not None and api_key:
             partial_memory = pipeline.run_summary.get('memory', {}).get('partial_chapters', 0)
             if partial_memory:
                 st.warning(f'{partial_memory} 个章节的记忆因输入预算而仅部分覆盖；原文仍按段处理，详情见 ChapterMemory.json。')
+            rejected_memory = pipeline.run_summary.get('memory', {}).get('rejected_selections', 0)
+            if rejected_memory:
+                st.warning(f'{rejected_memory} 条章节记忆选择无法在原文中验证，已丢弃；该章节其余记忆照常使用，明细见 ChapterMemory.json。')
             st.session_state["last_output_dir"] = run_output_dir
 
             update_config({

@@ -208,7 +208,8 @@ class SentencePolishingPipeline(PolishingPipeline):
                 self.run_summary = self._run_summary(starts)
                 self.run_summary['memory'] = {'mode': self.config.get('memory_mode', 'structured'),
                     'chapters': len(memories), 'failed_chapters': len(memory_errors),
-                    'partial_chapters': sum(m['coverage'] == 'partial' for m in memories.values())}
+                    'partial_chapters': sum(m['coverage'] == 'partial' for m in memories.values()),
+                    'rejected_selections': sum(m['rejected_selection_count'] for m in memories.values())}
                 (output / 'ChapterMemory.json').write_text(json.dumps({'document_hash': self.document_hash,
                     'chapters': list(memories.values()), 'failed_chapters': [list(key) for key in memory_errors]},
                     ensure_ascii=False, indent=2), encoding='utf-8')
