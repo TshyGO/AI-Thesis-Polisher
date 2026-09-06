@@ -88,9 +88,11 @@ def profiling_factory(recorder):
     class ProfilingClient(StageClient):
         def call_api(self, messages, temperature=0.1, timeout=60, max_retries=None):
             stage = self.stage_config.stage
-            recorder.reserve(stage)
             before = len(self.telemetry)
             started = time.monotonic()
+            # Outside the try: a refused reservation is not an attempt, and must
+            # surface as the budget error rather than as a bookkeeping failure.
+            recorder.reserve(stage)
             try:
                 return super().call_api(messages, temperature, timeout, max_retries=1)
             finally:
@@ -138,15 +140,25 @@ def paragraph_outcomes(records, corpus_rows=None):
 
 
 def reference_agreement(outcomes):
-    """Corpus labels are agent-authored, so this is label agreement, not accuracy."""
+    """Paragraph-level label agreement. Deliberately NOT a per-defect recall.
+
+    A seeded paragraph counts as covered when ANY of its sentences was edited, so
+    a paragraph carrying two seeded defects looks covered after one of them is
+    fixed. The corpus labels defects per paragraph, not per sentence, so this
+    metric cannot see the other one; compare configurations sentence by sentence
+    with benchmarks/compare_runs.py before claiming a recall difference.
+    Corpus labels are agent-authored, so even that is agreement, not accuracy.
+    """
     if any('seeded' not in outcome for outcome in outcomes):
         return None
     seeded = [o for o in outcomes if o['seeded']]
     clean = [o for o in outcomes if not o['seeded']]
-    return {'seeded_paragraphs': len(seeded),
-            'seeded_without_edit': sum(1 for o in seeded if not o['edit_written']),
+    return {'granularity': 'paragraph',
+            'caveat': 'a seeded paragraph counts as covered after any one of its sentences is edited',
+            'seeded_paragraphs': len(seeded),
+            'seeded_paragraphs_without_any_edit': sum(1 for o in seeded if not o['edit_written']),
             'clean_paragraphs': len(clean),
-            'clean_with_edit': sum(1 for o in clean if o['edit_written'])}
+            'clean_paragraphs_with_any_edit': sum(1 for o in clean if o['edit_written'])}
 
 
 def triage_agreement(triage_log, records):

@@ -8,12 +8,14 @@ import hashlib
 from pathlib import Path
 
 import streamlit as st
-import pythoncom
 
 try:
+    import pythoncom
     pythoncom.CoInitialize()
 except Exception:
-    pass
+    # Missing or unusable COM is reported by the environment gate below, with
+    # something the user can act on, instead of an import traceback.
+    pythoncom = None
 
 import logging
 
@@ -106,11 +108,25 @@ sys.path.append(str(PROJECT_ROOT))
 
 from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, credential_widget_key, same_endpoint, DEFAULTS
 from engine.environment import environment_report, blocking_problems
-from engine.document import DocumentProcessor
-from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 from engine.uploads import upload_identity
 
 st.set_page_config(page_title="AI Thesis Polisher", page_icon="🎓", layout="wide")
+
+# The COM-backed modules are imported only after this gate: on a machine without
+# Word or pywin32 their import is exactly what fails, and an import traceback is
+# not an explanation the user can act on.
+environment_checks = environment_report()
+environment_problems = blocking_problems(environment_checks)
+if environment_problems:
+    st.title("🎓 论文逐句润色神器 (Open Source)")
+    st.error("运行环境缺少必要组件，无法启动：\n\n"
+             + "\n".join(f"- **{c['name']}**（当前：{c['detail']}）—— {c['fix']}"
+                         for c in environment_problems))
+    st.caption("修好上面的问题后刷新本页。工具只在 Windows + 桌面版 Microsoft Word 上运行。")
+    st.stop()
+
+from engine.document import DocumentProcessor
+from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 
 default_output_root = ensure_directory(str(user_cfg.get("output_root", DEFAULT_OUTPUT_ROOT)))
 prompt_cfg = user_cfg.get("prompt_customization", {}) or {}
@@ -189,16 +205,10 @@ with st.sidebar:
 st.title("🎓 论文逐句润色神器 (Open Source)")
 st.markdown("基于多阶段交叉复审（Cross-Review）防止“AI味”的 Word 原生修订工具。")
 
-environment_checks = environment_report()
-environment_problems = blocking_problems(environment_checks)
-if environment_problems:
-    problem_lines = [f"- **{c['name']}**（当前：{c['detail']}）—— {c['fix']}" for c in environment_problems]
-    st.error("运行环境缺少必要组件，处理会在写回 Word 时失败：\n\n" + "\n".join(problem_lines))
-
 uploaded_file = st.file_uploader("上传待润色的 Word 文档 (.docx)", type=["docx"])
 
 if uploaded_file is None:
-    with st.expander("开始之前（第一次使用请先看这里）", expanded=not environment_problems):
+    with st.expander("开始之前（第一次使用请先看这里）", expanded=True):
         st.markdown("""**需要什么**
 
 - Windows + 桌面版 Microsoft Word（修订痕迹由 Word 原生功能写入，网页版 / WPS / LibreOffice 不行）

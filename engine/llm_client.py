@@ -192,4 +192,11 @@ class LLMClient:
             if first is None:
                 raise
             return first  # a broken repair never discards an already grounded selection
-        return second if first is None or len(second[1]) <= len(first[1]) else first
+        if first is None:
+            return second
+        kept = lambda result: len(result[0]['terms']) + len(result[0]['facts'])
+        # An empty selection is contract-valid, so a repair can answer with one and
+        # score zero rejections. Never let that erase selections already grounded.
+        if kept(second) == 0 and kept(first) > 0:
+            return first
+        return second if len(second[1]) <= len(first[1]) else first

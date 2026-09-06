@@ -49,6 +49,16 @@ class IncompleteRunTests(unittest.TestCase):
         self.assertFalse(lost_a_chapter({'run_summary': {'memory': {'failed_chapters': 0}}, 'failure': None}))
         self.assertFalse(lost_a_chapter({}))
 
+    def test_a_paragraph_level_failure_also_makes_a_run_incomparable(self):
+        for status in ('MODEL_TIMEOUT', 'MODEL_FORMAT_ERROR', 'PROCESSING_ERROR',
+                       'PATCH_FAILED', 'RUN_ABORTED', 'SKIPPED_UNSUPPORTED'):
+            with self.subTest(status=status):
+                self.assertTrue(lost_a_chapter({'sentence_rows_by_status': {'KEEP': 3, status: 1}}))
+
+    def test_ordinary_outcomes_do_not_make_a_run_incomparable(self):
+        self.assertFalse(lost_a_chapter({'sentence_rows_by_status': {
+            'KEEP': 10, 'EDIT_WRITTEN': 4, 'REVIEW_REJECTED': 1, 'VALIDATION_REJECTED': 2}}))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -183,6 +183,27 @@ class ChapterMemoryTests(unittest.TestCase):
         self.assertEqual([term['text'] for term in selection['terms']], ['APTES'])
         self.assertEqual(rejections, [])
 
+    def test_an_empty_repair_never_erases_grounded_selections(self):
+        _, snapshots, _, _ = self.fixture()
+        sources = snapshots[0].sentences
+        client = object.__new__(LLMClient)
+        client.call_api = Mock(side_effect=[
+            '{"terms":[{"source_id":"P1:S1","text":"APTES","kind":"abbreviation"},'
+            '{"source_id":"P1:S1","text":"Invented","kind":"term"}],"facts":["P1:S2"]}',
+            '{"terms":[],"facts":[]}'])
+        selection, rejections = client.call_memory_api([], sources)
+        self.assertEqual([term['text'] for term in selection['terms']], ['APTES'])
+        self.assertEqual(selection['facts'], ['P1:S2'])
+        self.assertEqual(len(rejections), 1)
+
+    def test_a_deliberately_empty_first_answer_costs_no_repair(self):
+        _, snapshots, _, _ = self.fixture()
+        client = object.__new__(LLMClient)
+        client.call_api = Mock(return_value='{"terms":[],"facts":[]}')
+        selection, rejections = client.call_memory_api([], snapshots[0].sentences)
+        self.assertEqual((selection, rejections), ({'terms': [], 'facts': []}, []))
+        self.assertEqual(client.call_api.call_count, 1)
+
     def test_a_worse_repair_does_not_replace_the_salvaged_first_answer(self):
         _, snapshots, _, _ = self.fixture()
         sources = snapshots[0].sentences

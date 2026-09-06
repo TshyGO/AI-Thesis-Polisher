@@ -218,11 +218,24 @@ class OutcomeTests(unittest.TestCase):
 
     def test_reference_agreement_counts_both_directions(self):
         agreement = reference_agreement(paragraph_outcomes(self.RECORDS, self.ROWS))
-        self.assertEqual(agreement, {'seeded_paragraphs': 1, 'seeded_without_edit': 0,
-                                     'clean_paragraphs': 1, 'clean_with_edit': 0})
+        self.assertEqual(agreement['seeded_paragraphs'], 1)
+        self.assertEqual(agreement['seeded_paragraphs_without_any_edit'], 0)
+        self.assertEqual(agreement['clean_paragraphs'], 1)
+        self.assertEqual(agreement['clean_paragraphs_with_any_edit'], 0)
+        self.assertEqual(agreement['granularity'], 'paragraph')
 
     def test_reference_agreement_is_none_without_corpus_labels(self):
         self.assertIsNone(reference_agreement(paragraph_outcomes(self.RECORDS)))
+
+    def test_a_paragraph_with_two_defects_looks_covered_after_one_edit(self):
+        records = [{'paragraph_idx': 1, 'sentence_id': 'P1:S1', 'status': 'EDIT_WRITTEN'},
+                   {'paragraph_idx': 1, 'sentence_id': 'P1:S2', 'status': 'KEEP'}]
+        rows = [{'chapter': 'A', 'order': 1, 'text': 'x',
+                 'seeded': ['agreement:one', 'verbosity:two'], 'must_keep': []}]
+        agreement = reference_agreement(paragraph_outcomes(records, rows))
+        # The second seeded defect was never fixed, and this metric cannot see it.
+        self.assertEqual(agreement['seeded_paragraphs_without_any_edit'], 0)
+        self.assertIn('any one of its sentences', agreement['caveat'])
 
 
 class TriageAgreementTests(unittest.TestCase):

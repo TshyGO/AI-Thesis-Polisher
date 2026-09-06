@@ -14,10 +14,22 @@ import json
 from pathlib import Path
 
 
+INCOMPLETE_STATUSES = ('MODEL_', 'MEMORY_', 'PROCESSING_ERROR', 'PATCH_FAILED',
+                       'RUN_ABORTED', 'SKIPPED_UNSUPPORTED')
+
+
 def lost_a_chapter(report):
-    """A run that never edited part of the document cannot be compared on edits."""
+    """A run that left part of the document unprocessed cannot be compared on edits.
+
+    Paragraph-level failures are caught per paragraph by the pipeline, so the
+    run's own top-level failure stays null; their sentences would otherwise be
+    counted as deliberate non-edits and invent a divergence.
+    """
     memory = (report.get('run_summary') or {}).get('memory') or {}
-    return bool(memory.get('failed_chapters')) or bool(report.get('failure'))
+    if memory.get('failed_chapters') or report.get('failure'):
+        return True
+    statuses = report.get('sentence_rows_by_status') or {}
+    return any(status.startswith(INCOMPLETE_STATUSES) for status in statuses)
 
 
 def load_reports(pattern, include_incomplete=False):
