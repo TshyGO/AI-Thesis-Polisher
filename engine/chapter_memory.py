@@ -166,6 +166,8 @@ class ChapterMemory:
             if len(json.dumps(context, ensure_ascii=False)) > budget:
                 context[field].pop()
                 context['selection_truncated'] = True
+                return False
+            return True
         # Facts only point to the current supplied target sentences. Their full text
         # is already in the edit/review payload; never import other paragraphs' facts.
         for fact in data['facts']:
@@ -174,8 +176,8 @@ class ChapterMemory:
         seen = set()
         for term in data['terms']:
             if term['text'] not in seen and occurrences(target_text, term['text']):
-                add('terms', term)
-                seen.add(term['text'])
+                if add('terms', term):
+                    seen.add(term['text'])
         return context
 
 

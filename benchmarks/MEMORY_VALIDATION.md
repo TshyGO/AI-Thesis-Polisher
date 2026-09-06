@@ -23,6 +23,9 @@ of what memory selected. Empty selections are not permission to change facts.
   Python character positions in that original paragraph, not the modified Word.
 - Chapter ID uses source paragraph bounds, including when headings have identical
   names. Targets are checked against the memory's exact source sentences.
+  Boundaries follow the existing Word OutlineLevel 1/2 parser; manually styled
+  headings without outline metadata may remain in one scope. This is not yet a
+  complete semantic chapter/section tree.
 - Fact references in prompts point only to supplied current target sentences;
   their text is already in the editor/reviewer payload. Other paragraphs' facts
   are not added as factual instructions. Terms are retrieved only when they occur
@@ -84,7 +87,7 @@ without Python optimization; its assertions are now explicit runtime checks.
 
 ## Engineering and Word verification
 
-- 66 offline/UI tests pass, including invented/missing citations, term-prefix
+- 67 offline/UI tests pass, including invented/missing citations, term-prefix
   confusion, immutable memory, source/model cache invalidation, corrupt-cache
   rejection, cross-chapter targets/neighbors, bounded omissions, error memoization
   and simultaneous memory-cache writers.

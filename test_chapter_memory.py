@@ -59,6 +59,16 @@ class ChapterMemoryTests(unittest.TestCase):
         self.assertLessEqual(len(json.dumps(context, ensure_ascii=False)), 160)
         self.assertTrue(context['selection_truncated'])
 
+    def test_shorter_term_source_can_fit_after_long_source_is_omitted(self):
+        root, snapshots, chapter, client = self.fixture()
+        snapshots[0] = ParagraphSnapshot(1, 'APTES ' + 'long ' * 400 + '.')
+        client.call_memory_api.return_value = {'terms': [
+            {'source_id': sid, 'text': 'APTES', 'kind': 'abbreviation'} for sid in ('P1:S1', 'P2:S1')], 'facts': []}
+        memory = build_memory(chapter, snapshots, 'doc', client, 'model', root)
+        context = memory.context_for(snapshots[1], budget=500)
+        self.assertEqual(context['terms'][0]['source']['source_id'], 'P2:S1')
+        self.assertLessEqual(len(json.dumps(context, ensure_ascii=False)), 500)
+
     def test_invented_quotes_sources_and_protection_claims_are_rejected(self):
         _, snapshots, _, _ = self.fixture()
         sources = tuple(s for p in snapshots for s in p.sentences)
