@@ -105,6 +105,7 @@ hydrate_last_result_from_config(user_cfg)
 sys.path.append(str(PROJECT_ROOT))
 
 from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, credential_widget_key, same_endpoint, DEFAULTS
+from engine.environment import environment_report, blocking_problems
 from engine.document import DocumentProcessor
 from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 from engine.uploads import upload_identity
@@ -188,7 +189,36 @@ with st.sidebar:
 st.title("🎓 论文逐句润色神器 (Open Source)")
 st.markdown("基于多阶段交叉复审（Cross-Review）防止“AI味”的 Word 原生修订工具。")
 
+environment_checks = environment_report()
+environment_problems = blocking_problems(environment_checks)
+if environment_problems:
+    problem_lines = [f"- **{c['name']}**（当前：{c['detail']}）—— {c['fix']}" for c in environment_problems]
+    st.error("运行环境缺少必要组件，处理会在写回 Word 时失败：\n\n" + "\n".join(problem_lines))
+
 uploaded_file = st.file_uploader("上传待润色的 Word 文档 (.docx)", type=["docx"])
+
+if uploaded_file is None:
+    with st.expander("开始之前（第一次使用请先看这里）", expanded=not environment_problems):
+        st.markdown("""**需要什么**
+
+- Windows + 桌面版 Microsoft Word（修订痕迹由 Word 原生功能写入，网页版 / WPS / LibreOffice 不行）
+- 一个兼容 OpenAI Chat Completions 的接口：左侧填 Base URL、API Key、Model
+
+**处理前请确认**
+
+- 要润色的 .docx 已在 Word 中关闭，否则解析会失败
+- 文档里若已有修订痕迹，相关段落会被跳过，并在 Excel 报表里写明原因
+
+**会发生什么**
+
+- 原始上传会被复制一份到输出目录，程序不修改你上传的那个文件
+- 每次运行产出一份带修订痕迹的 Word 和一份逐句 Excel 报表，你在 Word 里逐条接受或拒绝
+- 论文内容会发送给你配置的模型接口；API Key 只保存在本机 `user_config.json`
+
+已知限制与验证记录见项目 README。""")
+
+if uploaded_file is not None and not api_key:
+    st.warning("请先在左侧填写 API Key，否则无法开始处理。")
 
 if uploaded_file is not None and api_key:
     UPLOAD_CACHE_ROOT.mkdir(parents=True, exist_ok=True)

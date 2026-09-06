@@ -9,8 +9,10 @@ from engine.document import DocumentProcessor
 from engine.revision_contract import SentenceDecision
 from engine.chapter_memory import build_memory, MemoryValidationError
 from engine.sentence_pipeline import SentencePolishingPipeline
+from engine.environment import word_available
 
 
+@unittest.skipUnless(word_available(), 'desktop Microsoft Word is not available')
 class WordSentenceTests(unittest.TestCase):
     def test_real_heading_scopes_keep_memory_sources_separate(self):
         root = Path(__file__).parent / 'cache' / ('word-memory-' + uuid.uuid4().hex)
@@ -162,6 +164,7 @@ class WordSentenceTests(unittest.TestCase):
             self.assertTrue(processor.snapshot_paragraph(1).blocked_reason.startswith('EXISTING_REVISIONS'))
 
 
+@unittest.skipUnless(word_available(), 'desktop Microsoft Word is not available')
 class WordBatchTests(unittest.TestCase):
     """One packed editor call must still write each paragraph as its own transaction."""
 
