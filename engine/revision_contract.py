@@ -80,3 +80,40 @@ def validate_review(proposed, reviewed):
         if item.decision == 'edit' and item.revised_sentence != by_id[item.sentence_id].revised_sentence:
             raise ModelFormatError("Reviewer introduced a different revision")
     return reviewed
+
+
+TRIAGE_CONTRACT = '''Return ONLY a JSON array with exactly one verdict for every supplied sentence_id.
+{"sentence_id":"P1:S1","needs_edit":true}
+needs_edit is a boolean. Answer false only when you are confident the sentence needs no
+language edit at all; when in doubt answer true. This is a screening pass, not a decision:
+do not rewrite anything, do not add any other key, explanation, markdown or thinking tag.
+Preserve the exact IDs. An empty array is not a valid answer.'''
+
+
+def parse_triage(content: str, expected_ids):
+    """Screening verdicts. A missing verdict is an error, never an implicit skip."""
+    text = content.strip() if isinstance(content, str) else ''
+    if text.startswith('```'):
+        lines = text.splitlines()
+        if len(lines) < 3 or lines[0] not in ('```', '```json') or lines[-1] != '```':
+            raise ModelFormatError('Incomplete JSON fence')
+        text = '\n'.join(lines[1:-1])
+    try:
+        payload = json.loads(text)
+    except (ValueError, TypeError):
+        raise ModelFormatError('Invalid triage JSON') from None
+    if not isinstance(payload, list):
+        raise ModelFormatError('Triage verdicts must be an array')
+    expected, verdicts = set(expected_ids), {}
+    for item in payload:
+        if not isinstance(item, dict) or set(item) != {'sentence_id', 'needs_edit'}:
+            raise ModelFormatError('Triage verdict must carry only sentence_id and needs_edit')
+        sid, needs_edit = item['sentence_id'], item['needs_edit']
+        if not isinstance(sid, str) or sid not in expected or sid in verdicts:
+            raise ModelFormatError('Unknown or duplicate triage sentence id')
+        if not isinstance(needs_edit, bool):
+            raise ModelFormatError('needs_edit must be a boolean')
+        verdicts[sid] = needs_edit
+    if set(verdicts) != expected:
+        raise ModelFormatError('Missing triage verdicts')
+    return verdicts

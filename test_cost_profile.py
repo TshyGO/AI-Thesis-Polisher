@@ -5,7 +5,8 @@ import unittest
 from pathlib import Path
 
 from benchmarks.cost_profile import (BudgetExceeded, Recorder, paragraph_outcomes,
-                                     payload_shape, reference_agreement, summarize)
+                                     payload_shape, reference_agreement, summarize,
+                                     triage_agreement)
 from benchmarks.textdoc import MemoryDocument, load_corpus
 from engine.revision_contract import SentenceDecision
 from engine.sentences import ParagraphSnapshot
@@ -207,6 +208,32 @@ class OutcomeTests(unittest.TestCase):
 
     def test_reference_agreement_is_none_without_corpus_labels(self):
         self.assertIsNone(reference_agreement(paragraph_outcomes(self.RECORDS)))
+
+
+class TriageAgreementTests(unittest.TestCase):
+    LOG = {'verdicts': {'P1:S1': True, 'P1:S2': False, 'P2:S1': False, 'P2:S2': True}, 'failures': []}
+    RECORDS = [{'sentence_id': 'P1:S1', 'status': 'EDIT_WRITTEN'},
+               {'sentence_id': 'P1:S2', 'status': 'EDIT_WRITTEN'},
+               {'sentence_id': 'P2:S1', 'status': 'KEEP'},
+               {'sentence_id': 'P2:S2', 'status': 'KEEP'}]
+
+    def test_counts_written_edits_that_screening_would_have_dropped(self):
+        agreement = triage_agreement(self.LOG, self.RECORDS)
+        self.assertEqual(agreement['edits_written'], 2)
+        self.assertEqual(agreement['screened_out'], 2)
+        self.assertEqual(agreement['edits_screened_out'], 1)
+        self.assertEqual(agreement['missed_sentence_ids'], ['P1:S2'])
+        self.assertEqual(agreement['marked_for_edit'], 2)
+
+    def test_written_edits_without_a_verdict_are_reported_not_ignored(self):
+        agreement = triage_agreement({'verdicts': {'P1:S1': True}, 'failures': [{'error': 'X'}]}, self.RECORDS)
+        self.assertEqual(agreement['unscreened_written_edits'], 1)
+        self.assertEqual(agreement['screening_failures'], 1)
+        self.assertEqual(agreement['edits_screened_out'], 0)
+
+    def test_no_verdicts_reports_nothing_rather_than_perfect_agreement(self):
+        self.assertIsNone(triage_agreement({'verdicts': {}, 'failures': []}, self.RECORDS))
+        self.assertIsNone(triage_agreement(None, self.RECORDS))
 
 
 class SegmentationTests(unittest.TestCase):

@@ -19,7 +19,7 @@ import uuid
 from pathlib import Path
 
 from engine.sentence_pipeline import SentencePolishingPipeline
-from engine.stage_models import StageClient, build_stage_clients
+from engine.stage_models import StageClient, StageConfig, build_stage_clients
 from benchmarks.textdoc import MemoryDocument, load_corpus
 
 
@@ -149,6 +149,24 @@ def reference_agreement(outcomes):
             'clean_with_edit': sum(1 for o in clean if o['edit_written'])}
 
 
+def triage_agreement(triage_log, records):
+    """Shadow comparison: what would screening have dropped that editing wrote?"""
+    verdicts = (triage_log or {}).get('verdicts') or {}
+    if not verdicts:
+        return None
+    written = {r.get('sentence_id') for r in records if r.get('status') == 'EDIT_WRITTEN'}
+    screened_out = {sid for sid, needs in verdicts.items() if not needs}
+    missed = sorted(written & screened_out)
+    return {'sentences_screened': len(verdicts),
+            'marked_for_edit': sum(1 for needs in verdicts.values() if needs),
+            'screened_out': len(screened_out),
+            'edits_written': len(written),
+            'edits_screened_out': len(missed),
+            'missed_sentence_ids': missed,
+            'screening_failures': len((triage_log or {}).get('failures') or []),
+            'unscreened_written_edits': len(written - set(verdicts))}
+
+
 def summarize(recorder_rows, records, corpus_chars, paragraph_count, corpus_rows=None):
     stages = {}
     for row in recorder_rows:
@@ -204,6 +222,9 @@ def main():
     parser.add_argument('--max-requests', type=int, default=60)
     parser.add_argument('--batch-size', type=int, default=1,
                         help='consecutive paragraphs packed into one editor call')
+    parser.add_argument('--triage', choices=('off', 'shadow'), default='off',
+                        help='shadow screens every editor call without skipping anything')
+    parser.add_argument('--triage-model', default=DEFAULTS['editor'])
     parser.add_argument('--label', default='baseline')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
@@ -228,11 +249,16 @@ def main():
     clients = build_stage_clients({'api_key': key, 'base_url': ENDPOINT, 'model': args.editor_model},
                                   overrides, args.review_mode, factory=profiling_factory(recorder))
 
+    if args.triage != 'off':
+        # Triage is not routed by resolve_configs; build it explicitly so its cost is separable.
+        clients['triage'] = profiling_factory(recorder)(
+            StageConfig('triage', ENDPOINT, args.triage_model, key, 0.1, 60, 1))
+
     document = MemoryDocument(texts, chapters)
     config = {'language': 'english', 'intensity': 'standard', 'min_chars': 20,
               'use_cross_review': args.review_mode != 'off', 'memory_mode': 'structured',
               'protected_terms': [], 'skipped_chapters': [], 'output_dir': str(run_root),
-              'editor_batch_size': args.batch_size,
+              'editor_batch_size': args.batch_size, 'triage_mode': args.triage,
               'excel_output_filename': 'Report.xlsx', 'original_filename': Path(args.corpus).name}
     pipeline = IsolatedPipeline(clients['editor'], document, config, stage_clients=clients)
     pipeline.isolate(run_root)
@@ -256,7 +282,8 @@ def main():
         'config': {'models': {stage: overrides.get(stage, {}).get('model', args.editor_model) for stage in DEFAULTS},
                    'review_mode': args.review_mode, 'memory_mode': 'structured',
                    'language': 'english', 'intensity': 'standard', 'max_requests': args.max_requests,
-                   'editor_batch_size': args.batch_size},
+                   'editor_batch_size': args.batch_size, 'triage_mode': args.triage,
+                   'triage_model': args.triage_model if args.triage != 'off' else None},
         'wall_seconds': round(time.monotonic() - started, 3),
         'changes_written': changes,
         'failure': failure,
@@ -264,9 +291,11 @@ def main():
         'requests': recorder.rows,
     }
     report.update(summarize(recorder.rows, pipeline.last_records, report['corpus']['chars'], len(texts), rows))
+    report['triage_agreement'] = triage_agreement(pipeline.run_summary.get('triage'), pipeline.last_records)
     path = run_root / 'cost-profile.json'
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
-    print(json.dumps({k: report[k] for k in ('label', 'totals', 'stages', 'paragraphs', 'amplification', 'failure')},
+    print(json.dumps({k: report[k] for k in ('label', 'totals', 'stages', 'paragraphs', 'amplification',
+                                            'triage_agreement', 'failure')},
                      ensure_ascii=False, indent=2))
     print('report: %s' % path, file=sys.stderr)
     if failure:

@@ -152,6 +152,22 @@ class LLMClient:
             ], temperature=temperature, timeout=timeout, max_retries=1)
             return parse_result(content)
 
+    def call_triage_api(self, messages, expected_ids):
+        """Screening verdicts only. One explicit repair, then fail closed."""
+        from engine.revision_contract import TRIAGE_CONTRACT, parse_triage
+        expected_ids = list(expected_ids)
+        contract = TRIAGE_CONTRACT + "\nOutput IDs must be EXACTLY: " + json.dumps(expected_ids)
+        request = self._with_contract(messages, contract)
+        content = self.call_api(request, temperature=0.1, timeout=60)
+        try:
+            return parse_triage(content, expected_ids)
+        except ModelFormatError as error:
+            content = self.call_api(request + [
+                {"role": "assistant", "content": content},
+                {"role": "user", "content": "Invalid triage contract: " + str(error) + ". " + contract},
+            ], temperature=0.1, timeout=60, max_retries=1)
+            return parse_triage(content, expected_ids)
+
     def call_memory_api(self, messages, sources):
         """Return (selection, rejections). One repair request, never two."""
         from engine.chapter_memory import CONTRACT, parse_selection

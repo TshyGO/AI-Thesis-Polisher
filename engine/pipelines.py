@@ -89,7 +89,7 @@ class PolishingPipeline:
             hashlib.sha256(text.encode("utf-8")).hexdigest(),
             self._model_identity(),
             json.dumps({k: self.config.get(k) for k in
-                        ("min_chars", "skipped_chapters", "protected_terms", "editor_batch_size")}, sort_keys=True),
+                        ("min_chars", "skipped_chapters", "protected_terms", "editor_batch_size", "triage_mode")}, sort_keys=True),
         ])
         return hashlib.md5(key_str.encode("utf-8")).hexdigest()
 

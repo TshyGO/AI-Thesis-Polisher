@@ -98,8 +98,10 @@ def build_stage_clients(base, overrides=None, review_mode='same', factory=StageC
 def client_identity(client, stage):
     if isinstance(client, StageClient):
         return client.stage_config.public()
+    # Optional stages such as triage are not routed by resolve_configs and have no entry here.
+    temperature, timeout = DEFAULTS.get(stage, (0.1, 60))
     return {'stage': stage, 'base_url': getattr(client, 'base_url', ''),
-            'model': getattr(client, 'model', ''), 'temperature': DEFAULTS[stage][0], 'timeout': DEFAULTS[stage][1]}
+            'model': getattr(client, 'model', ''), 'temperature': temperature, 'timeout': timeout}
 
 
 def persistable_overrides(overrides):
