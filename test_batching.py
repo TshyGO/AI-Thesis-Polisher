@@ -157,13 +157,74 @@ class BatchingTests(unittest.TestCase):
         pipeline.config['editor_batch_size'] = 4
         self.assertNotEqual(first, pipeline.get_cache_key(str(source), 1, PARAGRAPHS[1]))
 
-    def test_review_still_runs_per_paragraph_on_its_own_candidates(self):
-        source, pipeline, clients, _ = self.make_pipeline(4, review=True)
+    def test_review_is_packed_over_the_same_group(self):
+        source, pipeline, clients, document = self.make_pipeline(4, review=True)
+        changes, _ = pipeline.process_document(str(source))
+        self.assertEqual(clients['reviewer'].call_sentence_api.call_count, 1)
+        payload = json.loads(clients['reviewer'].call_sentence_api.call_args.args[0][-1]['content'])
+        self.assertEqual(sorted(payload['source']), ['P1:S2', 'P2:S2', 'P3:S2', 'P4:S2'])
+        self.assertEqual(changes, 4)
+
+    def test_review_runs_per_paragraph_when_packing_is_off(self):
+        source, pipeline, clients, _ = self.make_pipeline(1, review=True)
         pipeline.process_document(str(source))
         self.assertEqual(clients['reviewer'].call_sentence_api.call_count, 4)
         for call in clients['reviewer'].call_sentence_api.call_args_list:
             payload = json.loads(call.args[0][-1]['content'])
             self.assertEqual(len({sid.split(':')[0] for sid in payload['source']}), 1)
+
+    def test_a_packed_review_that_rejects_only_affects_its_own_paragraph(self):
+        source, pipeline, clients, document = self.make_pipeline(4, review=True)
+
+        def review(messages, expected_ids, validator=None):
+            result = [SentenceDecision(sid, 'keep', 'not an improvement') if sid == 'P2:S2'
+                      else SentenceDecision(sid, 'edit', 'fix', 'Edited sentence.', 'grammar', 1)
+                      for sid in expected_ids]
+            if validator is not None:
+                validator(result)
+            return result
+
+        clients['reviewer'].call_sentence_api.side_effect = review
+        changes, _ = pipeline.process_document(str(source))
+        self.assertEqual(changes, 3)
+        self.assertEqual(document.current[2], PARAGRAPHS[2])
+        rejected = [r for r in pipeline.last_records if r['status'] == 'REVIEW_REJECTED']
+        self.assertEqual([r['sentence_id'] for r in rejected], ['P2:S2'])
+
+    def test_a_failed_review_batch_falls_back_to_single_paragraphs(self):
+        source, pipeline, clients, document = self.make_pipeline(4, review=True)
+        seen = []
+
+        def flaky(messages, expected_ids, validator=None):
+            seen.append(list(expected_ids))
+            if len(expected_ids) > 1:
+                raise RuntimeError('review batch exploded')
+            result = [SentenceDecision(sid, 'edit', 'fix', 'Edited sentence.', 'grammar', 1) for sid in expected_ids]
+            if validator is not None:
+                validator(result)
+            return result
+
+        clients['reviewer'].call_sentence_api.side_effect = flaky
+        changes, _ = pipeline.process_document(str(source))
+        self.assertEqual([len(ids) for ids in seen], [4, 1, 1, 1, 1])
+        self.assertEqual(changes, 4)
+        self.assertFalse(any(r['status'] == 'REVIEW_REJECTED' for r in pipeline.last_records))
+
+    def test_cached_reviews_are_not_requested_again(self):
+        source, pipeline, clients, document = self.make_pipeline(4, review=True)
+        pipeline.process_document(str(source))
+        document.current = document.original.copy()
+        pipeline.process_document(str(source))
+        self.assertEqual(clients['reviewer'].call_sentence_api.call_count, 1)
+
+    def test_review_packing_stops_at_a_chapter_boundary(self):
+        source, pipeline, clients, _ = self.make_pipeline(
+            4, chapters=[{'name': 'A', 'start': 1, 'end': 2}, {'name': 'B', 'start': 3, 'end': 4}], review=True)
+        pipeline.process_document(str(source))
+        self.assertEqual(clients['reviewer'].call_sentence_api.call_count, 2)
+        for call in clients['reviewer'].call_sentence_api.call_args_list:
+            payload = json.loads(call.args[0][-1]['content'])
+            self.assertEqual(len(payload['source']), 2)
 
 
 if __name__ == '__main__':
