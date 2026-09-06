@@ -40,7 +40,9 @@ class ExcelExporter:
         original_sentence = item.get("sentence", "")
         old_frag = item.get("old", "")
         new_frag = item.get("new", "")
-        if original_sentence and old_frag and old_frag in original_sentence:
+        if 'result_sentence' in item:
+            polished = item['result_sentence']
+        elif original_sentence and old_frag and old_frag in original_sentence:
             polished = original_sentence.replace(old_frag, new_frag, 1)
         elif old_frag:
             polished = f"[改: {old_frag} → {new_frag}]"
@@ -61,7 +63,7 @@ class ExcelExporter:
         ws.append(row_data)
         row_num = ws.max_row
         status = row_data[7]
-        fill = self.FILL_KEPT if status == "✅保留" else (self.FILL_REJ if status == "❌驳回" else None)
+        fill = self.FILL_KEPT if status in ("✅保留", 'EDIT_WRITTEN') else (self.FILL_REJ if status in ("❌驳回", 'REVIEW_REJECTED', 'VALIDATION_REJECTED') else None)
         for cell in ws[row_num]:
             if fill:
                 cell.fill = fill

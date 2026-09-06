@@ -104,7 +104,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 from engine.llm_client import LLMClient
 from engine.document import DocumentProcessor
-from engine.pipelines import PolishingPipeline
+from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 from engine.uploads import upload_identity
 
 st.set_page_config(page_title="AI Thesis Polisher", page_icon="🎓", layout="wide")
@@ -318,11 +318,11 @@ if uploaded_file is not None and api_key:
             })
 
             my_bar.empty()
-            failures = sum(r.get("status", "").endswith(("ERROR", "FAILED", "TIMEOUT")) for r in pipeline.last_records)
+            failures = sum(r.get("status", "").endswith(("ERROR", "FAILED", "TIMEOUT")) or r.get("status") == 'SKIPPED_UNSUPPORTED' for r in pipeline.last_records)
             if failures:
-                status_box.warning(f"处理结束，但有 {failures} 条失败记录；请检查 Excel 状态列。写入 {changes} 处修改。输出：{run_output_dir}")
+                status_box.warning(f"处理结束，但有 {failures} 条失败或结构跳过记录；请检查 Excel 状态列。修订 {changes} 句。输出：{run_output_dir}")
             else:
-                status_box.success(f"✅ 润色完毕！共计采纳了 {changes} 处实质性修改。输出目录：{run_output_dir}")
+                status_box.success(f"✅ 润色完毕！共计修订了 {changes} 句。输出目录：{run_output_dir}")
 
         except Exception as e:
             st.error(f"❌ 运行过程中发生错误：{e}")
