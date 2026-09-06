@@ -91,7 +91,8 @@ without Python optimization; its assertions are now explicit runtime checks.
   confusion, immutable memory, source/model cache invalidation, corrupt-cache
   rejection, cross-chapter targets/neighbors, bounded omissions, error memoization
   and simultaneous memory-cache writers.
-- Existing real Word suite is rerun separately (8 tests).
+- Real Word suite: 9 tests, including actual outline-heading scopes and refusal
+  to use one Word chapter's memory for another chapter's target.
 - A full structured-memory Word run used 3 API attempts, wrote 2 sentences,
   preserved saved revisions, and verified the original source hash was unchanged.
   Replaying into a fresh output used 0 additional API attempts.
