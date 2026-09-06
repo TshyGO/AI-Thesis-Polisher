@@ -141,10 +141,12 @@ class DocumentProcessor:
     @staticmethod
     def _safe_patch_font(range_):
         font = range_.Font
-        if font.Superscript != 0 or font.Subscript != 0:
+        if font.Superscript != 0 or font.Subscript != 0 or font.Hidden != 0:
             return False
-        return all(getattr(font, name) not in (9999999, '')
-                   for name in ('Bold', 'Italic', 'Underline', 'Name', 'Size', 'Color'))
+        return all(getattr(font, name) not in (9999999, '', None)
+                   for name in ('Bold', 'Italic', 'Underline', 'Name', 'Size', 'Color',
+                                'StrikeThrough', 'DoubleStrikeThrough', 'SmallCaps',
+                                'AllCaps', 'Spacing', 'Position', 'Scaling'))
 
     def _assign_patch(self, range_, text):
         """Single mutation hook, also used to inject failures in real Word tests."""
