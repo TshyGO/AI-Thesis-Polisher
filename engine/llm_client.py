@@ -151,3 +151,16 @@ class LLMClient:
                 {"role": "user", "content": "Invalid contract: " + str(error) + ". Return exactly the required sentence decisions. " + contract},
             ], temperature=temperature, timeout=timeout, max_retries=1)
             return parse_result(content)
+
+    def call_memory_api(self, messages, sources):
+        from engine.chapter_memory import CONTRACT, parse_selection
+        request = self._with_contract(messages, CONTRACT)
+        content = self.call_api(request, temperature=0.1, timeout=180)
+        try:
+            return parse_selection(content, sources)
+        except ModelFormatError as error:
+            content = self.call_api(request + [
+                {'role': 'assistant', 'content': content},
+                {'role': 'user', 'content': 'Invalid source selection: ' + str(error) + '. ' + CONTRACT},
+            ], temperature=0.1, timeout=180, max_retries=1)
+            return parse_selection(content, sources)
