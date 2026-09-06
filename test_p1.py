@@ -39,6 +39,7 @@ class SentenceTests(unittest.TestCase):
     def test_degree_abbreviations(self):
         self.assertEqual([s.text for s in SentenceSegmenter().segment('She has an M.Sc. degree. Next.')],
                          ['She has an M.Sc. degree.', 'Next.'])
+        self.assertEqual(len(SentenceSegmenter().segment('Samples were assigned to group A. Results were recorded.')), 2)
 
 
 if __name__ == '__main__':
