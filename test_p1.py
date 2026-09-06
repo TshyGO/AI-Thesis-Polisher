@@ -1,6 +1,10 @@
 import unittest
+import json
+from unittest.mock import Mock
 from dataclasses import FrozenInstanceError
 from engine.sentences import SentenceSegmenter, ParagraphSnapshot, utf16_length
+from engine.revision_contract import parse_decisions, validate_review
+from engine.llm_client import LLMClient, ModelFormatError
 
 
 class SentenceTests(unittest.TestCase):
@@ -40,6 +44,40 @@ class SentenceTests(unittest.TestCase):
         self.assertEqual([s.text for s in SentenceSegmenter().segment('She has an M.Sc. degree. Next.')],
                          ['She has an M.Sc. degree.', 'Next.'])
         self.assertEqual(len(SentenceSegmenter().segment('Samples were assigned to group A. Results were recorded.')), 2)
+
+
+class ContractTests(unittest.TestCase):
+    def edit(self, **extra):
+        result = dict(sentence_id='P1:S1', decision='edit', reason='grammar',
+                      revised_sentence='A sentence.', category='grammar', confidence=0.9)
+        result.update(extra)
+        return result
+
+    def test_keep_edit_and_explicit_deletion(self):
+        self.assertEqual(parse_decisions(json.dumps([self.edit(revised_sentence='')]), ['P1:S1'])[0].revised_sentence, '')
+        self.assertEqual(parse_decisions('[{"sentence_id":"P1:S1","decision":"keep","reason":"fine"}]', ['P1:S1'])[0].decision, 'keep')
+
+    def test_invalid_coverage_and_fields_fail_closed(self):
+        for payload in ([], [self.edit(), self.edit()], [self.edit(sentence_id='S1')],
+                        [self.edit(confidence=True)], [self.edit(confidence=float('nan'))], [self.edit(confidence=10**400)],
+                        [self.edit(old='copied')], [self.edit(revised_sentence='new\rparagraph')],
+                        [self.edit(revised_sentence='new\ttext')], [self.edit(revised_sentence='new\u2028line')],
+                        [self.edit(revised_sentence='new\u2029paragraph')]):
+            with self.subTest(payload=payload), self.assertRaises(ModelFormatError):
+                parse_decisions(json.dumps(payload), ['P1:S1'])
+
+    def test_reviewer_must_not_rewrite(self):
+        proposed = parse_decisions(json.dumps([self.edit()]), ['P1:S1'])
+        reviewed = parse_decisions(json.dumps([self.edit(revised_sentence='Different.')]), ['P1:S1'])
+        with self.assertRaises(ModelFormatError):
+            validate_review(proposed, reviewed)
+
+    def test_live_protocol_retries_once_not_silent_keep(self):
+        client = object.__new__(LLMClient)
+        client.call_api = Mock(return_value='[]')
+        with self.assertRaises(ModelFormatError):
+            client.call_sentence_api([], ['P1:S1'])
+        self.assertEqual(client.call_api.call_count, 2)
 
 
 if __name__ == '__main__':
