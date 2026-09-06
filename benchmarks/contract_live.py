@@ -15,7 +15,9 @@ class BoundedClient(LLMClient):
         if self.calls >= 6:
             raise RuntimeError('Protocol test request limit')
         self.calls += 1
-        return super().call_api(messages, temperature, timeout=60, max_retries=1)
+        response = super().call_api(messages, temperature, timeout=60, max_retries=1)
+        print(json.dumps({'request': self.calls, 'response': response}, ensure_ascii=False), file=sys.stderr)
+        return response
 
 
 def main():
@@ -42,5 +44,6 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as error:
-        print('Protocol test failed: ' + type(error).__name__, file=sys.stderr)
+        from engine.llm_client import ModelFormatError
+        print('Protocol test failed: ' + type(error).__name__ + (': ' + str(error) if isinstance(error, ModelFormatError) else ''), file=sys.stderr)
         sys.exit(1)
