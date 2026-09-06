@@ -1,6 +1,8 @@
 import json
 import unittest
 import uuid
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -101,6 +103,29 @@ class ChapterMemoryTests(unittest.TestCase):
         with self.assertRaises(MemoryValidationError):
             client.call_memory_api([], snapshots[0].sentences)
         self.assertEqual(client.call_api.call_count, 2)
+
+    def test_declared_terms_keep_source_locations_even_if_model_omits_them(self):
+        root, snapshots, chapter, client = self.fixture()
+        client.call_memory_api.return_value = {'terms': [], 'facts': []}
+        memory = build_memory(chapter, snapshots, 'doc', client, 'model', root, user_terms=['APTES'])
+        self.assertEqual([term['source']['paragraph_index'] for term in memory.to_dict()['terms']], [1, 2])
+        self.assertTrue(all(term['protection'] == 'user' for term in memory.to_dict()['terms']))
+
+    def test_concurrent_memory_writers_publish_valid_complete_cache(self):
+        root, snapshots, chapter, client = self.fixture()
+        barrier = threading.Barrier(2, timeout=10)
+        selection = client.call_memory_api.return_value
+        def select(messages, sources):
+            barrier.wait()
+            return selection
+        client.call_memory_api.side_effect = select
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(build_memory, chapter, snapshots, 'doc', client, 'model', root) for _ in range(2)]
+            memories = [future.result() for future in futures]
+        self.assertEqual(memories[0].to_dict(), memories[1].to_dict())
+        self.assertEqual(len(list(root.glob('memory-*.json'))), 1)
+        self.assertFalse(list(root.glob('*.tmp')))
+        self.assertIsInstance(json.loads(next(root.glob('memory-*.json')).read_text(encoding='utf-8')), list)
 
     def test_pipeline_never_passes_neighbors_across_chapter_boundary(self):
         source, pipeline, client, document = fixtures.SentencePipelineTests().make_pipeline()

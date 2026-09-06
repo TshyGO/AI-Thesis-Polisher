@@ -1,5 +1,6 @@
 """Fixed synthetic memory-representation comparison. Key on stdin; max 14 attempts."""
 import json
+import hashlib
 import logging
 import sys
 import time
@@ -42,26 +43,30 @@ def main():
           ParagraphSnapshot(4, 'The APTES sample were cured.')], 'The APTES sample was cured.'),
     ]
     rows = []
+    document_hash = hashlib.sha256(json.dumps([[p.text for p in group[1]] for group in chapters], ensure_ascii=False).encode('utf-8')).hexdigest()
     for index, (chapter, sources, reference) in enumerate(chapters):
         # Alternate representation order, with identical target/source and editor policy.
         modes = ['legacy', 'structured'] if index == 0 else ['structured', 'legacy']
         for mode in modes:
             started = time.monotonic()
+            event_starts = {stage: len(client.telemetry) for stage, client in clients.items()}
             row = {'chapter': chapter['name'], 'mode': mode}
             try:
                 if mode == 'legacy':
                     notes = pipeline.run_stage_0_chapter_understanding(chapter['name'], '\n'.join(p.text for p in sources), 'english')
                     context = {'legacy_notes': notes}
                 else:
-                    notes = build_memory(chapter, sources, 'fixed-synthetic-comparison', clients['understanding'],
+                    notes = build_memory(chapter, sources, document_hash, clients['understanding'],
                                          pipeline._chapter_model_identity(), root / 'memory')
                     context = notes.context_for(sources[-1])
                     (root / f"{mode}-{index}.json").write_text(json.dumps(notes.to_dict(), ensure_ascii=False, indent=2), encoding='utf-8')
                     forbidden = 'reagent B' if index == 0 else 'reagent A'
-                    assert forbidden not in json.dumps(context)
+                    if forbidden in json.dumps(context):
+                        raise RuntimeError('Cross-chapter content appeared in memory context')
                     before = len(clients['understanding'].telemetry)
-                    build_memory(chapter, sources, 'fixed-synthetic-comparison', clients['understanding'], pipeline._chapter_model_identity(), root / 'memory')
-                    assert len(clients['understanding'].telemetry) == before
+                    build_memory(chapter, sources, document_hash, clients['understanding'], pipeline._chapter_model_identity(), root / 'memory')
+                    if len(clients['understanding'].telemetry) != before:
+                        raise RuntimeError('Memory cache replay made an extra API call')
                 neighbors = [{'paragraph_index': sources[0].index, 'text': sources[0].text}]
                 decisions = pipeline._decide(sources[-1], notes, neighbors)
                 revised = sources[-1].text
@@ -77,6 +82,7 @@ def main():
             except Exception as error:
                 row.update(status=getattr(error, 'status', type(error).__name__))
             row['elapsed_seconds'] = round(time.monotonic()-started, 3)
+            row['stage_requests'] = {stage: client.telemetry[event_starts[stage]:] for stage, client in clients.items()}
             rows.append(row)
     report = {'kind': 'synthetic-memory-representation-smoke', 'prompt_version': pipeline.PROMPT_VERSION,
               'rows': rows, 'attempts': sum(len(c.telemetry) for c in registered),

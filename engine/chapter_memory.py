@@ -2,8 +2,11 @@
 import hashlib
 import json
 import re
+import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from functools import cached_property
 from engine.llm_client import ModelFormatError
 from engine.validation import ProtectedSpanExtractor
 
@@ -64,6 +67,8 @@ def validate_selection(payload, sources):
         sid, text, kind = term['source_id'], term['text'], term['kind']
         if not isinstance(sid, str) or sid not in lookup or not isinstance(text, str) or not 1 <= len(text) <= 120 or not text.strip():
             raise MemoryValidationError('Unknown source or invalid term')
+        if text != text.strip() or any(ord(c) < 32 for c in text):
+            raise MemoryValidationError('Term must not contain surrounding whitespace or controls')
         if kind not in ('term', 'abbreviation') or not occurrences(lookup[sid].text, text):
             raise MemoryValidationError('Term does not occur literally in the cited source')
         key = (sid, text)
@@ -108,7 +113,8 @@ class ChapterMemory:
     omitted_ids: tuple
     user_terms: tuple = ()
 
-    def to_dict(self):
+    @cached_property
+    def _encoded_data(self):
         lookup = {s.id: s for s in self.sources}
         terms, facts = [], []
         for encoded_selection in self.selections:
@@ -121,10 +127,24 @@ class ChapterMemory:
                               'source': source_record(source),
                               'occurrences': [[source.start+a, source.start+b] for a, b in occurrences(source.text, term['text'])]})
             facts.extend(source_record(lookup[sid]) for sid in selection['facts'])
-        return {'version': VERSION, 'chapter_id': self.chapter_id, 'title': self.title,
+        selected = {(term['source']['source_id'], term['text']) for term in terms}
+        for source in self.sources:
+            for text in self.user_terms:
+                matches = occurrences(source.text, text) if text else []
+                if matches and (source.id, text) not in selected:
+                    terms.append({'text': text, 'kind': 'term', 'protection': 'user', 'source': source_record(source),
+                                  'occurrences': [[source.start+a, source.start+b] for a, b in matches]})
+                    selected.add((source.id, text))
+        data = {'version': VERSION, 'chapter_id': self.chapter_id, 'title': self.title,
                 'document_hash': self.document_hash, 'terms': terms, 'facts': facts,
                 'declared_protected_terms': list(self.user_terms),
+                'source_count': len(self.sources), 'submitted_source_count': len(self.sources)-len(self.omitted_ids),
+                'coverage_basis': 'sources_submitted_to_selector_not_fact_completeness',
                 'omitted_source_ids': list(self.omitted_ids), 'coverage': 'partial' if self.omitted_ids else 'complete'}
+        return json.dumps(data, ensure_ascii=False)
+
+    def to_dict(self):
+        return json.loads(self._encoded_data)
 
     def context_for(self, snapshot, allowed_ids=None, budget=MAX_CONTEXT_CHARS):
         lookup = {s.id: s for s in self.sources}
@@ -206,8 +226,24 @@ def build_memory(chapter, snapshots, document_hash, client, identity, cache_dir,
             selection = client.call_memory_api(messages, chunk)
             selections.append(validate_selection(selection, chunk))
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_suffix('.tmp')
-        temporary.write_text(json.dumps(selections, ensure_ascii=False), encoding='utf-8')
-        temporary.replace(path)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent,
+                                             prefix=path.stem + '.', suffix='.tmp', delete=False) as stream:
+                temporary = Path(stream.name)
+                json.dump(selections, stream, ensure_ascii=False)
+            for attempt in range(5):
+                try:
+                    temporary.replace(path)
+                    break
+                except PermissionError:
+                    # Windows may briefly deny simultaneous replacement of one
+                    # destination. Never share temp files or remove the destination.
+                    if attempt == 4:
+                        raise
+                    time.sleep(0.02 * (attempt + 1))
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
     return ChapterMemory(chapter_id, chapter['name'], document_hash, sources,
                          tuple(json.dumps(item, ensure_ascii=False) for item in selections), tuple(omitted), tuple(user_terms))
