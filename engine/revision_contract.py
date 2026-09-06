@@ -57,7 +57,7 @@ def parse_decisions(content: str, expected_ids):
             revised, category, confidence = (item.get(key) for key in ('revised_sentence', 'category', 'confidence'))
             if (not isinstance(revised, str) or category not in ('grammar', 'wordiness', 'clarity', 'style')
                     or isinstance(confidence, bool) or not isinstance(confidence, (float, int))
-                    or not math.isfinite(confidence) or not 0 <= confidence <= 1):
+                    or not 0 <= confidence <= 1 or not math.isfinite(confidence)):
                 raise ModelFormatError("Invalid revision fields")
             if any(ord(c) < 32 or c in '\x7f\x85\u2028\u2029' for c in revised):
                 raise ModelFormatError("Revision introduces structural characters")
