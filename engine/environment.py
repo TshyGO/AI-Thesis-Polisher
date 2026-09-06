@@ -76,3 +76,13 @@ def blocking_problems(checks):
 def word_available():
     """True when desktop Word is registered on this machine."""
     return sys.platform == 'win32' and pywin32_available() and bool(registered_progid())
+
+
+# Without these the COM-backed modules cannot even be imported, so the app has
+# to stop. A missing Word still imports fine; that is reported and the run fails
+# later with its own message.
+IMPORT_BLOCKING = ('Windows', 'pywin32')
+
+
+def import_blocking(checks):
+    return [check for check in checks if not check['ok'] and check['name'] in IMPORT_BLOCKING]

@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from engine.environment import (blocking_problems, environment_report,
+from engine.environment import (blocking_problems, environment_report, import_blocking,
                                 registered_progid, WORD_PROGID)
 
 
@@ -30,6 +30,19 @@ class EnvironmentReportTests(unittest.TestCase):
         self.assertEqual(blocking_problems(checks), [])
         self.assertEqual({c['name'] for c in checks}, {'Windows', 'pywin32', 'Microsoft Word'})
         self.assertEqual(checks[-1]['detail'], 'Word.Application.16')
+
+    def test_a_missing_word_blocks_the_run_but_not_the_interface(self):
+        # win32com still imports without Word, so the app must render and explain
+        # rather than refuse to start.
+        checks = environment_report(platform='win32', progid=None, pywin32=True)
+        self.assertEqual([c['name'] for c in blocking_problems(checks)], ['Microsoft Word'])
+        self.assertEqual(import_blocking(checks), [])
+
+    def test_a_missing_com_dependency_blocks_the_interface_itself(self):
+        for checks in (environment_report(platform='darwin'),
+                       environment_report(platform='win32', progid='Word.Application.16', pywin32=False)):
+            with self.subTest(checks=[c['name'] for c in checks]):
+                self.assertTrue(import_blocking(checks))
 
     def test_every_check_carries_a_fix_a_user_can_act_on(self):
         for checks in (environment_report(platform='darwin'),

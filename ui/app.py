@@ -107,7 +107,7 @@ hydrate_last_result_from_config(user_cfg)
 sys.path.append(str(PROJECT_ROOT))
 
 from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, credential_widget_key, same_endpoint, DEFAULTS
-from engine.environment import environment_report, blocking_problems
+from engine.environment import environment_report, blocking_problems, import_blocking
 from engine.uploads import upload_identity
 
 st.set_page_config(page_title="AI Thesis Polisher", page_icon="🎓", layout="wide")
@@ -117,11 +117,12 @@ st.set_page_config(page_title="AI Thesis Polisher", page_icon="🎓", layout="wi
 # not an explanation the user can act on.
 environment_checks = environment_report()
 environment_problems = blocking_problems(environment_checks)
-if environment_problems:
+problem_lines = "\n".join(f"- **{c['name']}**（当前：{c['detail']}）—— {c['fix']}"
+                          for c in environment_problems)
+if import_blocking(environment_checks):
+    # Nothing below can even be imported on this machine.
     st.title("🎓 论文逐句润色神器 (Open Source)")
-    st.error("运行环境缺少必要组件，无法启动：\n\n"
-             + "\n".join(f"- **{c['name']}**（当前：{c['detail']}）—— {c['fix']}"
-                         for c in environment_problems))
+    st.error("运行环境缺少必要组件，无法启动：\n\n" + problem_lines)
     st.caption("修好上面的问题后刷新本页。工具只在 Windows + 桌面版 Microsoft Word 上运行。")
     st.stop()
 
@@ -204,6 +205,9 @@ with st.sidebar:
 
 st.title("🎓 论文逐句润色神器 (Open Source)")
 st.markdown("基于多阶段交叉复审（Cross-Review）防止“AI味”的 Word 原生修订工具。")
+
+if environment_problems:
+    st.error("运行环境缺少必要组件，处理会在写回 Word 时失败：\n\n" + problem_lines)
 
 uploaded_file = st.file_uploader("上传待润色的 Word 文档 (.docx)", type=["docx"])
 
