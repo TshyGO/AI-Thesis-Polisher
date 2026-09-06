@@ -8,6 +8,7 @@ from pathlib import Path
 from engine.llm_client import LLMClient, ModelError, ModelFormatError
 from engine.validation import Validator
 from engine.document import DocumentProcessor
+from engine.sentences import SentenceSegmenter
 
 
 class PolishingPipeline:
@@ -117,21 +118,7 @@ class PolishingPipeline:
     @staticmethod
     def split_sentences(text: str, language: str) -> list:
         """按语言分句，返回句子列表"""
-        if language in ("english", "mixed"):
-            parts = re.split(r"(?<=[.?!])\s+", text.strip())
-            return [p.strip() for p in parts if p.strip()]
-
-        if "。" not in text:
-            return [text.strip()] if text.strip() else []
-
-        parts = text.split("。")
-        sentences = []
-        for i, part in enumerate(parts):
-            part = part.strip()
-            if not part:
-                continue
-            sentences.append(part + "。" if i < len(parts) - 1 else part)
-        return [s for s in sentences if s]
+        return [sentence.text for sentence in SentenceSegmenter().segment(text)]
 
     @staticmethod
     def label_sentences(sentences: list) -> str:
