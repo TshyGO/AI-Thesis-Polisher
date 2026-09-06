@@ -8,12 +8,14 @@ import hashlib
 from pathlib import Path
 
 import streamlit as st
-import pythoncom
 
 try:
+    import pythoncom
     pythoncom.CoInitialize()
 except Exception:
-    pass
+    # Missing or unusable COM is reported by the environment gate below, with
+    # something the user can act on, instead of an import traceback.
+    pythoncom = None
 
 import logging
 
@@ -105,11 +107,27 @@ hydrate_last_result_from_config(user_cfg)
 sys.path.append(str(PROJECT_ROOT))
 
 from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, credential_widget_key, same_endpoint, DEFAULTS
-from engine.document import DocumentProcessor
-from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
+from engine.environment import environment_report, blocking_problems, import_blocking
 from engine.uploads import upload_identity
 
 st.set_page_config(page_title="AI Thesis Polisher", page_icon="🎓", layout="wide")
+
+# The COM-backed modules are imported only after this gate: on a machine without
+# Word or pywin32 their import is exactly what fails, and an import traceback is
+# not an explanation the user can act on.
+environment_checks = environment_report()
+environment_problems = blocking_problems(environment_checks)
+problem_lines = "\n".join(f"- **{c['name']}**（当前：{c['detail']}）—— {c['fix']}"
+                          for c in environment_problems)
+if import_blocking(environment_checks):
+    # Nothing below can even be imported on this machine.
+    st.title("🎓 论文逐句润色神器 (Open Source)")
+    st.error("运行环境缺少必要组件，无法启动：\n\n" + problem_lines)
+    st.caption("修好上面的问题后刷新本页。工具只在 Windows + 桌面版 Microsoft Word 上运行。")
+    st.stop()
+
+from engine.document import DocumentProcessor
+from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 
 default_output_root = ensure_directory(str(user_cfg.get("output_root", DEFAULT_OUTPUT_ROOT)))
 prompt_cfg = user_cfg.get("prompt_customization", {}) or {}
@@ -188,7 +206,33 @@ with st.sidebar:
 st.title("🎓 论文逐句润色神器 (Open Source)")
 st.markdown("基于多阶段交叉复审（Cross-Review）防止“AI味”的 Word 原生修订工具。")
 
+if environment_problems:
+    st.error("运行环境缺少必要组件，处理会在写回 Word 时失败：\n\n" + problem_lines)
+
 uploaded_file = st.file_uploader("上传待润色的 Word 文档 (.docx)", type=["docx"])
+
+if uploaded_file is None:
+    with st.expander("开始之前（第一次使用请先看这里）", expanded=True):
+        st.markdown("""**需要什么**
+
+- Windows + 桌面版 Microsoft Word（修订痕迹由 Word 原生功能写入，网页版 / WPS / LibreOffice 不行）
+- 一个兼容 OpenAI Chat Completions 的接口：左侧填 Base URL、API Key、Model
+
+**处理前请确认**
+
+- 要润色的 .docx 已在 Word 中关闭，否则解析会失败
+- 文档里若已有修订痕迹，相关段落会被跳过，并在 Excel 报表里写明原因
+
+**会发生什么**
+
+- 原始上传会被复制一份到输出目录，程序不修改你上传的那个文件
+- 每次运行产出一份带修订痕迹的 Word 和一份逐句 Excel 报表，你在 Word 里逐条接受或拒绝
+- 论文内容会发送给你配置的模型接口；API Key 只保存在本机 `user_config.json`
+
+已知限制与验证记录见项目 README。""")
+
+if uploaded_file is not None and not api_key:
+    st.warning("请先在左侧填写 API Key，否则无法开始处理。")
 
 if uploaded_file is not None and api_key:
     UPLOAD_CACHE_ROOT.mkdir(parents=True, exist_ok=True)
@@ -243,6 +287,10 @@ if uploaded_file is not None and api_key:
             }[x],
         )
         min_chars = st.number_input("忽略过短的段落 (最小字符数)", value=20, min_value=1, help="低于此字数的段落（如图注、短标题）将被直接跳过")
+        editor_batch_size = st.number_input(
+            "每次编辑调用打包的段落数", value=int(user_cfg.get('editor_batch_size', 1)), min_value=1, max_value=12,
+            help="连续同章节段落合并为一次调用，减少重复发送的上下文。写回仍按段独立进行；"
+                 "整批失败会自动退回逐段调用。改动此值会使已有建议缓存失效。")
 
     with col2:
         st.subheader("🔧 复审与输出")
@@ -333,6 +381,7 @@ if uploaded_file is not None and api_key:
                         "language": language_mode,
                         "intensity": intensity,
                         "min_chars": int(min_chars),
+                        "editor_batch_size": int(editor_batch_size),
                         'protected_terms': protected_terms,
                         "use_cross_review": use_cross_review,
                         "skipped_chapters": skipped_chapters,
@@ -364,11 +413,15 @@ if uploaded_file is not None and api_key:
             partial_memory = pipeline.run_summary.get('memory', {}).get('partial_chapters', 0)
             if partial_memory:
                 st.warning(f'{partial_memory} 个章节的记忆因输入预算而仅部分覆盖；原文仍按段处理，详情见 ChapterMemory.json。')
+            rejected_memory = pipeline.run_summary.get('memory', {}).get('rejected_selections', 0)
+            if rejected_memory:
+                st.warning(f'{rejected_memory} 条章节记忆选择无法在原文中验证，已丢弃；该章节其余记忆照常使用，明细见 ChapterMemory.json。')
             st.session_state["last_output_dir"] = run_output_dir
 
             update_config({
                 "output_root": normalized_output_root,
                 'protected_terms': protected_terms,
+                'editor_batch_size': int(editor_batch_size),
                 "prompt_customization": {
                     "stage0": stage0_extra,
                     "stage1": stage1_extra,

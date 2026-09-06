@@ -152,15 +152,51 @@ class LLMClient:
             ], temperature=temperature, timeout=timeout, max_retries=1)
             return parse_result(content)
 
+    def call_triage_api(self, messages, expected_ids):
+        """Screening verdicts only. One explicit repair, then fail closed."""
+        from engine.revision_contract import TRIAGE_CONTRACT, parse_triage
+        expected_ids = list(expected_ids)
+        contract = TRIAGE_CONTRACT + "\nOutput IDs must be EXACTLY: " + json.dumps(expected_ids)
+        request = self._with_contract(messages, contract)
+        content = self.call_api(request, temperature=0.1, timeout=60)
+        try:
+            return parse_triage(content, expected_ids)
+        except ModelFormatError as error:
+            content = self.call_api(request + [
+                {"role": "assistant", "content": content},
+                {"role": "user", "content": "Invalid triage contract: " + str(error) + ". " + contract},
+            ], temperature=0.1, timeout=60, max_retries=1)
+            return parse_triage(content, expected_ids)
+
     def call_memory_api(self, messages, sources):
+        """Return (selection, rejections). One repair request, never two."""
         from engine.chapter_memory import CONTRACT, parse_selection
         request = self._with_contract(messages, CONTRACT)
         content = self.call_api(request, temperature=0.1, timeout=180)
+        first = complaint = None
         try:
-            return parse_selection(content, sources)
+            first = parse_selection(content, sources, salvage=True)
         except ModelFormatError as error:
-            content = self.call_api(request + [
-                {'role': 'assistant', 'content': content},
-                {'role': 'user', 'content': 'Invalid source selection: ' + str(error) + '. ' + CONTRACT},
-            ], temperature=0.1, timeout=180, max_retries=1)
-            return parse_selection(content, sources)
+            complaint = str(error)
+        else:
+            if not first[1]:
+                return first
+            complaint = first[1][0]['reason']
+        repaired = self.call_api(request + [
+            {'role': 'assistant', 'content': content},
+            {'role': 'user', 'content': 'Invalid source selection: ' + complaint + '. ' + CONTRACT},
+        ], temperature=0.1, timeout=180, max_retries=1)
+        try:
+            second = parse_selection(repaired, sources, salvage=True)
+        except ModelFormatError:
+            if first is None:
+                raise
+            return first  # a broken repair never discards an already grounded selection
+        if first is None:
+            return second
+        kept = lambda result: len(result[0]['terms']) + len(result[0]['facts'])
+        # An empty selection is contract-valid, so a repair can answer with one and
+        # score zero rejections. Never let that erase selections already grounded.
+        if kept(second) == 0 and kept(first) > 0:
+            return first
+        return second if len(second[1]) <= len(first[1]) else first

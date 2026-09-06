@@ -21,7 +21,9 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r requirements.txt
-      - run: python -m unittest test_pipeline_regressions test_p0 test_p1 test_stage_models test_review_compare test_stage_ui test_chapter_memory
+      # Discovery, so a new test module can never be left out of CI.
+      # Word-dependent suites skip themselves when desktop Word is absent.
+      - run: python -m unittest discover -s . -p "test_*.py" -v
       - run: python -m compileall -q engine ui benchmarks
       - if: github.event_name == 'pull_request'
         env:

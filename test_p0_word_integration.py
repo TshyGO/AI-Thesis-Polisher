@@ -7,8 +7,10 @@ from pathlib import Path
 from engine.document import DocumentProcessor
 from engine.pipelines import PolishingPipeline
 from test_pipeline_regressions import FakeLLMClient
+from engine.environment import word_available
 
 
+@unittest.skipUnless(word_available(), 'desktop Microsoft Word is not available')
 class WordSmoke(unittest.TestCase):
     def test_pipeline_cache_replay_into_fresh_word(self):
         root = Path(__file__).parent / "cache" / "test_artifacts" / uuid.uuid4().hex

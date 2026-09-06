@@ -64,7 +64,7 @@ class StageModelTests(unittest.TestCase):
         clients = build_stage_clients(self.base(), {'reviewer': {'model': 'other'}}, 'independent')
         for client in clients.values():
             client.call_api = Mock(return_value='notes')
-            client.call_memory_api = Mock(return_value={'terms': [], 'facts': []})
+            client.call_memory_api = Mock(return_value=({'terms': [], 'facts': []}, []))
             client.call_sentence_api = Mock(side_effect=old_client.call_sentence_api.side_effect)
         pipeline.stage_clients = clients
         pipeline.process_document(str(source))

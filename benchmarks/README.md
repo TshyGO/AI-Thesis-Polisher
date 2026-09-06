@@ -55,3 +55,19 @@ initial report first if both measurements are needed.
 Remaining quality acceptance: obtain 30–50 authorised real examples, human-review
 labels, capture fixed baseline/candidate predictions, compare reports and manually
 adjudicate alternate valid rewrites before expanding to 100–300 examples.
+
+## Cost baseline for the batch-triage work
+
+`chapter_corpus.jsonl` holds 12 **contiguous** synthetic paragraphs in two
+chapters, unlike the isolated one-sentence samples above. Contiguity is required
+to observe neighbour-window and chapter-memory cost at all.
+
+```powershell
+python -m benchmarks.cost_profile --output cache/cost-baseline --label baseline --max-requests 40
+```
+
+The credential is read from stdin, the endpoint is pinned, and the run stops at
+the request cap. It reports attempts, tokens, latency and how many times the same
+source text is re-sent, plus per-paragraph outcomes for later diffing. It uses an
+in-memory document adapter, so it measures model traffic only and never tests Word
+patching. Measured baseline and its limits: [COST_BASELINE.md](COST_BASELINE.md).

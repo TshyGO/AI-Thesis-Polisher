@@ -8,8 +8,11 @@ from unittest.mock import Mock
 from engine.document import DocumentProcessor
 from engine.revision_contract import SentenceDecision
 from engine.chapter_memory import build_memory, MemoryValidationError
+from engine.sentence_pipeline import SentencePolishingPipeline
+from engine.environment import word_available
 
 
+@unittest.skipUnless(word_available(), 'desktop Microsoft Word is not available')
 class WordSentenceTests(unittest.TestCase):
     def test_real_heading_scopes_keep_memory_sources_separate(self):
         root = Path(__file__).parent / 'cache' / ('word-memory-' + uuid.uuid4().hex)
@@ -23,9 +26,9 @@ class WordSentenceTests(unittest.TestCase):
             self.assertEqual([c['start'] for c in chapters], [1, 4])
             snapshots = [processor.snapshot_paragraph(n) for n in range(1, processor.get_total_paragraphs()+1)]
             client = Mock()
-            client.call_memory_api.side_effect = lambda messages, sources: {
+            client.call_memory_api.side_effect = lambda messages, sources: ({
                 'terms': [{'source_id': s.id, 'text': 'APTES', 'kind': 'abbreviation'} for s in sources if s.text.startswith('APTES')],
-                'facts': [s.id for s in sources]}
+                'facts': [s.id for s in sources]}, [])
             digest = hashlib.sha256(processor.doc.Content.Text.encode('utf-8')).hexdigest()
             memories = [build_memory(c, [s for s in snapshots if c['start'] <= s.index <= c['end']],
                                      digest, client, 'fake', root) for c in chapters]
@@ -159,6 +162,54 @@ class WordSentenceTests(unittest.TestCase):
             processor.doc.TrackRevisions = True
             processor.doc.Range(0, 0).Text = 'new '
             self.assertTrue(processor.snapshot_paragraph(1).blocked_reason.startswith('EXISTING_REVISIONS'))
+
+
+@unittest.skipUnless(word_available(), 'desktop Microsoft Word is not available')
+class WordBatchTests(unittest.TestCase):
+    """One packed editor call must still write each paragraph as its own transaction."""
+
+    def test_packed_batch_writes_every_paragraph_and_keeps_the_source(self):
+        root = Path(__file__).parent / 'cache' / ('word-batch-' + uuid.uuid4().hex)
+        root.mkdir(parents=True)
+        source = root / 'batch.docx'
+        with DocumentProcessor() as writer:
+            writer.doc = writer.word.Documents.Add()
+            writer.doc.Content.Text = ('Alpha is slow. Alpha is slow.\rBeta was stable. Beta was stable.\r'
+                                       'Gamma is slow. Gamma is slow.\r')
+            writer.doc.SaveAs2(str(source))
+        clients = {}
+        for stage in ('understanding', 'editor', 'reviewer'):
+            client = Mock(model='fake-' + stage, base_url='fake')
+            client.call_memory_api.return_value = ({'terms': [], 'facts': []}, [])
+            clients[stage] = client
+
+        def decide(messages, expected_ids, validator=None):
+            return [SentenceDecision(sid, 'edit', 'fix', 'Edited sentence.', 'grammar', 1)
+                    if sid.endswith(':S2') else SentenceDecision(sid, 'keep', 'fine') for sid in expected_ids]
+
+        clients['editor'].call_sentence_api.side_effect = decide
+        with DocumentProcessor() as processor:
+            pipeline = SentencePolishingPipeline(
+                clients['editor'], processor,
+                {'language': 'english', 'min_chars': 1, 'output_dir': str(root),
+                 'use_cross_review': False, 'editor_batch_size': 3},
+                stage_clients=clients)
+            pipeline.cache_file = root / 'cache.json'
+            pipeline.chapter_notes_dir = root / 'notes'
+            pipeline.chapter_notes_dir.mkdir()
+            changes, _ = pipeline.process_document(str(source))
+        self.assertEqual(clients['editor'].call_sentence_api.call_count, 1)
+        self.assertEqual(len(clients['editor'].call_sentence_api.call_args[0][1]), 6)
+        self.assertEqual(changes, 3)
+        with DocumentProcessor() as reader:
+            reader.open_document(str(source), read_only=True)
+            self.assertGreater(reader.doc.Revisions.Count, 0)
+            expected = ['Alpha is slow. Edited sentence.', 'Beta was stable. Edited sentence.',
+                        'Gamma is slow. Edited sentence.']
+            self.assertEqual([reader._visible_paragraph_text(n) for n in (1, 2, 3)], expected)
+            # The originals survive as tracked deletions rather than being overwritten.
+            for index, original in enumerate(('Alpha is slow.', 'Beta was stable.', 'Gamma is slow.'), 1):
+                self.assertIn(original, reader.snapshot_paragraph(index).text)
 
 
 if __name__ == '__main__':
