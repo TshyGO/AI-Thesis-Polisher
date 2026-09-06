@@ -60,7 +60,9 @@ class ContractTests(unittest.TestCase):
     def test_invalid_coverage_and_fields_fail_closed(self):
         for payload in ([], [self.edit(), self.edit()], [self.edit(sentence_id='S1')],
                         [self.edit(confidence=True)], [self.edit(confidence=float('nan'))],
-                        [self.edit(old='copied')], [self.edit(revised_sentence='new\rparagraph')]):
+                        [self.edit(old='copied')], [self.edit(revised_sentence='new\rparagraph')],
+                        [self.edit(revised_sentence='new\ttext')], [self.edit(revised_sentence='new\u2028line')],
+                        [self.edit(revised_sentence='new\u2029paragraph')]):
             with self.subTest(payload=payload), self.assertRaises(ModelFormatError):
                 parse_decisions(json.dumps(payload), ['P1:S1'])
 
