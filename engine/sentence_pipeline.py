@@ -17,7 +17,7 @@ def decision_payload(decision):
 
 
 class SentencePolishingPipeline(PolishingPipeline):
-    PROMPT_VERSION = 'stage-models-v2'
+    PROMPT_VERSION = 'stage-models-v3'
 
     def __init__(self, llm_client, doc_parser, config, stage_clients=None):
         super().__init__(llm_client, doc_parser, config)
@@ -72,7 +72,7 @@ class SentencePolishingPipeline(PolishingPipeline):
              'EDIT retains its EXACT revised_sentence. Never invent a new revision. Reject pointless paraphrases '
              'and any changes to facts, modality, negation or normal experimental passives. ' + self._get_prompt_extra('stage2')},
             {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)},
-        ], [d.sentence_id for d in proposals])
+        ], [d.sentence_id for d in proposals], validator=lambda reviewed: validate_review(proposals, reviewed))
 
     def process_document(self, doc_path, progress_callback=None):
         self.document_hash = hashlib.sha256(Path(doc_path).read_bytes()).hexdigest()

@@ -131,18 +131,23 @@ class LLMClient:
             ], temperature, timeout, max_retries=1)
             return self._extract_json(repaired)
 
-    def call_sentence_api(self, messages, expected_ids, temperature=0.1, timeout=60):
+    def call_sentence_api(self, messages, expected_ids, temperature=0.1, timeout=60, validator=None):
         """Full-sentence protocol; local strict validation with one format retry."""
         from engine.revision_contract import SENTENCE_CONTRACT, parse_decisions
         expected_ids = list(expected_ids)
         contract = SENTENCE_CONTRACT + "\nOutput IDs must be EXACTLY: " + json.dumps(expected_ids)
         request = self._with_contract(messages, contract)
+        def parse_result(content):
+            decisions = parse_decisions(content, expected_ids)
+            if validator is not None:
+                validator(decisions)
+            return decisions
         content = self.call_api(request, temperature=temperature, timeout=timeout)
         try:
-            return parse_decisions(content, expected_ids)
-        except ModelFormatError:
+            return parse_result(content)
+        except ModelFormatError as error:
             content = self.call_api(request + [
                 {"role": "assistant", "content": content},
-                {"role": "user", "content": "Invalid contract. Return exactly the required sentence decisions. " + contract},
+                {"role": "user", "content": "Invalid contract: " + str(error) + ". Return exactly the required sentence decisions. " + contract},
             ], temperature=temperature, timeout=timeout, max_retries=1)
-            return parse_decisions(content, expected_ids)
+            return parse_result(content)

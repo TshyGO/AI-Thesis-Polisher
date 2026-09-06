@@ -1,7 +1,8 @@
 import unittest
+import json
 from engine.stage_models import StageClient
 from engine.revision_contract import SentenceDecision
-from benchmarks.review_compare import load_cases, prepare, score, run
+from benchmarks.review_compare import load_cases, prepare, score, run, cases_fingerprint, EDITOR
 
 
 class RejectAllClient(StageClient):
@@ -11,11 +12,14 @@ class RejectAllClient(StageClient):
         self.base_url = config.base_url
         self.telemetry = []
 
-    def call_sentence_api(self, messages, expected_ids):
+    def call_sentence_api(self, messages, expected_ids, validator=None):
         text = str(messages)
         assert 'expected_accept' not in text and 'technical_risk' not in text and 'good01' not in text
         self.telemetry.append({'prompt_tokens': 10, 'completion_tokens': 3})
-        return [SentenceDecision(sid, 'keep', 'test rejection') for sid in expected_ids]
+        result = [SentenceDecision(sid, 'keep', 'test rejection') for sid in expected_ids]
+        if validator is not None:
+            validator(result)
+        return result
 
 
 class ComparisonTests(unittest.TestCase):
@@ -43,6 +47,13 @@ class ComparisonTests(unittest.TestCase):
         _, _, labels, _ = prepare(cases)
         with self.assertRaises(ValueError):
             score([], labels)
+
+    def test_fingerprint_is_platform_independent_and_invalid_mode_is_preflighted(self):
+        cases, fingerprint = load_cases()
+        reformatted = json.loads(json.dumps(cases, indent=2).replace('\n', '\r\n'))
+        self.assertEqual(fingerprint, cases_fingerprint(reformatted))
+        with self.assertRaises(ValueError):
+            run('fake', factory=RejectAllClient, reviewer_model=EDITOR)
 
 
 if __name__ == '__main__':

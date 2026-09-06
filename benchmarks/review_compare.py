@@ -12,7 +12,7 @@ import time
 import uuid
 from pathlib import Path
 from types import SimpleNamespace
-from engine.stage_models import build_stage_clients, StageClient
+from engine.stage_models import build_stage_clients, StageClient, resolve_configs
 from engine.sentence_pipeline import SentencePolishingPipeline
 from engine.sentences import ParagraphSnapshot
 from engine.revision_contract import SentenceDecision, validate_review
@@ -25,7 +25,12 @@ REVIEWER = 'Qwen/Qwen3-30B-A3B-Instruct-2507'
 
 def load_cases():
     path = Path(__file__).with_name('reviewer_cases.jsonl')
-    return [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines() if line.strip()], hashlib.sha256(path.read_bytes()).hexdigest()
+    cases = [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines() if line.strip()]
+    return cases, cases_fingerprint(cases)
+
+
+def cases_fingerprint(cases):
+    return hashlib.sha256(json.dumps(cases, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')).hexdigest()
 
 
 def prepare(cases):
@@ -76,6 +81,7 @@ def run(key, factory=None, trials=3, reviewer_model=REVIEWER):
             print(f"API attempt {budget['attempts']}/12", file=sys.stderr, flush=True)
             return super().call_api(messages, temperature, timeout, max_retries=1)
     base = {'base_url': 'https://api.siliconflow.cn/v1', 'model': EDITOR, 'api_key': key}
+    resolve_configs(base, {'reviewer': {'model': reviewer_model}}, 'independent')
     output = []
     # Alternate order to reduce a systematic first/second reviewer timing bias.
     for trial in range(trials):

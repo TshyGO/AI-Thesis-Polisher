@@ -4,6 +4,7 @@ import time
 import json
 import shutil
 import uuid
+import hashlib
 from pathlib import Path
 
 import streamlit as st
@@ -103,7 +104,7 @@ hydrate_last_result_from_config(user_cfg)
 
 sys.path.append(str(PROJECT_ROOT))
 
-from engine.stage_models import build_stage_clients, persistable_overrides, DEFAULTS
+from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, DEFAULTS
 from engine.document import DocumentProcessor
 from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 from engine.uploads import upload_identity
@@ -118,6 +119,11 @@ with st.sidebar:
 
     api_key = st.text_input("API Key", type="password", value=user_cfg.get("api_key", ""), help="用于向配置的模型接口鉴权；保存账号会写入本地配置")
     base_url = st.text_input("Base URL", value=user_cfg.get("base_url", "https://api.deepseek.com/v1"), help="支持中转站或任意兼容 OpenAI 官方的端点")
+    allow_http = False
+    if base_url.lower().startswith('http://'):
+        st.warning('HTTP 不加密传输。已保存的主接口保留兼容；新地址需明确授权，建议改用 HTTPS。')
+        allow_http = st.checkbox('允许当前主接口使用 HTTP', value=saved_http_opt_in(user_cfg, base_url),
+            key='http-main-' + hashlib.sha256(base_url.encode()).hexdigest())
     model_name = st.text_input("Model", value=user_cfg.get("model", "deepseek-chat"), help="输入你要调用的模型名称")
     output_root = st.text_input("输出根目录", value=default_output_root, help="每次运行会在这里自动创建一个时间戳子目录")
 
@@ -135,9 +141,17 @@ with st.sidebar:
                 st.caption('模型和地址留空则沿用主配置。不同地址必须填写自己的 Key；阶段 Key 仅留在本次会话。')
                 if stage == 'reviewer':
                     st.caption('同模型模式沿用编辑阶段模型和 Key；关闭复审时以下设置不生效。')
+                stage_model = st.text_input(label + ' Model', value=saved.get('model', ''), placeholder=model_name)
+                stage_url = st.text_input(label + ' Base URL', value=saved.get('base_url', ''), placeholder=base_url)
+                stage_http = False
+                if stage_url.lower().startswith('http://'):
+                    stage_http = st.checkbox(label + '：明确允许此地址使用 HTTP（不加密）',
+                        value=saved.get('base_url') == stage_url and saved.get('allow_insecure_http', False) is True,
+                        key='http-' + stage + hashlib.sha256(stage_url.encode()).hexdigest())
                 stage_settings[stage] = {
-                    'model': st.text_input(label + ' Model', value=saved.get('model', ''), placeholder=model_name),
-                    'base_url': st.text_input(label + ' Base URL', value=saved.get('base_url', ''), placeholder=base_url),
+                    'model': stage_model,
+                    'base_url': stage_url,
+                    'allow_insecure_http': stage_http,
                     'api_key': st.text_input(label + ' API Key', type='password'),
                     'temperature': st.number_input(label + ' temperature', min_value=0.0, max_value=2.0,
                         value=float(saved.get('temperature', DEFAULTS[stage][0])), step=0.1),
@@ -155,6 +169,7 @@ with st.sidebar:
             update_config({
                 "api_key": api_key,
                 "base_url": base_url,
+                'allow_insecure_http': allow_http,
                 "model": model_name,
                 "output_root": normalized_output_root,
                 'review_mode': review_mode,
@@ -300,7 +315,7 @@ if uploaded_file is not None and api_key:
             word_output_name = f"Polished_{sanitize_filename(uploaded_file.name)}"
             excel_output_name = f"Report_{sanitize_filename(Path(uploaded_file.name).stem)}.xlsx"
 
-            clients = build_stage_clients({'api_key': api_key, 'base_url': base_url, 'model': model_name},
+            clients = build_stage_clients({'api_key': api_key, 'base_url': base_url, 'model': model_name, 'allow_insecure_http': allow_http},
                 stage_settings if stage_enabled else {}, review_mode)
 
             with DocumentProcessor() as doc_parser:
@@ -366,7 +381,10 @@ if uploaded_file is not None and api_key:
             st.error(f"❌ 运行过程中发生错误：{e}")
         finally:
             for client in (clients or {}).values():
-                client.client.close()
+                try:
+                    client.client.close()
+                except Exception as error:
+                    logging.getLogger('stage_clients').warning('Client cleanup failed (%s)', type(error).__name__)
 
 if st.session_state.get("result_docx_bytes"):
     st.markdown("### 📥 下载与输出")
