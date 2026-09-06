@@ -64,7 +64,10 @@ and labels were not changed after observing model results.
 
 Model endpoint/key binding is validated before client construction. Different
 endpoints never inherit the primary key implicitly. Stage keys are session-only
-and excluded from saved stage profiles, cache identities and Run.json metadata.
+and password widgets are bound to the normalized endpoint (including inherited
+main addresses), so changing an endpoint resets its session credential. Primary
+saved keys are loaded only for their matching saved endpoint. Stage keys are
+excluded from saved stage profiles, cache identities and Run.json metadata.
 The existing primary-key save behavior is unchanged.
 
 New remote endpoints require HTTPS by default. Loopback HTTP is supported;
@@ -82,7 +85,7 @@ workflow cache key; chapter notes depend only on the understanding model identit
 
 ## Reproduce
 
-Final local checks: 54 offline/UI tests and 8 real Word tests pass. A complete
+Final local checks: 55 offline/UI tests and 8 real Word tests pass. A complete
 stage-routed Word run used Qwen3-30B instruct for understanding/review and DeepSeek
 V4 Flash for editing: 3 actual API attempts, 2 edited sentences, saved revisions
 verified, original source unchanged, and 0 additional attempts on cached fresh-

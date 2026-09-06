@@ -1,5 +1,6 @@
 """Stage routing with explicit endpoint/key binding and secret-free cache identity."""
 import math
+import hashlib
 from dataclasses import dataclass, field, replace
 from urllib.parse import urlsplit, urlunsplit
 from engine.llm_client import LLMClient
@@ -112,3 +113,18 @@ def saved_http_opt_in(saved, current_url):
     """Grandfather only the exact saved main URL, never a newly entered address."""
     return (saved.get('base_url') == current_url and current_url.lower().startswith('http://')
             and saved.get('allow_insecure_http', True) is True)
+
+
+def same_endpoint(left, right):
+    try:
+        return normalized_endpoint(left, True) == normalized_endpoint(right, True)
+    except ValueError:
+        return False
+
+
+def credential_widget_key(stage, endpoint):
+    try:
+        identity = normalized_endpoint(endpoint, True)
+    except ValueError:
+        identity = 'invalid:' + str(endpoint)
+    return 'credential-' + stage + '-' + hashlib.sha256(identity.encode('utf-8')).hexdigest()

@@ -104,7 +104,7 @@ hydrate_last_result_from_config(user_cfg)
 
 sys.path.append(str(PROJECT_ROOT))
 
-from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, DEFAULTS
+from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, credential_widget_key, same_endpoint, DEFAULTS
 from engine.document import DocumentProcessor
 from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 from engine.uploads import upload_identity
@@ -117,8 +117,10 @@ prompt_cfg = user_cfg.get("prompt_customization", {}) or {}
 with st.sidebar:
     st.title("⚙️ 大模型与输出设置")
 
-    api_key = st.text_input("API Key", type="password", value=user_cfg.get("api_key", ""), help="用于向配置的模型接口鉴权；保存账号会写入本地配置")
     base_url = st.text_input("Base URL", value=user_cfg.get("base_url", "https://api.deepseek.com/v1"), help="支持中转站或任意兼容 OpenAI 官方的端点")
+    saved_key = user_cfg.get('api_key', '') if same_endpoint(base_url, user_cfg.get('base_url', 'https://api.deepseek.com/v1')) else ''
+    api_key = st.text_input("API Key", type="password", value=saved_key,
+        key=credential_widget_key('main', base_url), help="Key 绑定接口地址；地址改变后需重新填写。保存账号会写入本地配置。")
     allow_http = False
     if base_url.lower().startswith('http://'):
         st.warning('HTTP 不加密传输。已保存的主接口保留兼容；新地址需明确授权，建议改用 HTTPS。')
@@ -152,7 +154,7 @@ with st.sidebar:
                     'model': stage_model,
                     'base_url': stage_url,
                     'allow_insecure_http': stage_http,
-                    'api_key': st.text_input(label + ' API Key', type='password'),
+                    'api_key': st.text_input(label + ' API Key', type='password', key=credential_widget_key(stage, stage_url or base_url)),
                     'temperature': st.number_input(label + ' temperature', min_value=0.0, max_value=2.0,
                         value=float(saved.get('temperature', DEFAULTS[stage][0])), step=0.1),
                     'timeout': int(st.number_input(label + ' 超时（秒）', min_value=1, max_value=600,
