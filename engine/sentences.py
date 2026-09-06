@@ -54,7 +54,12 @@ class SentenceSegmenter:
             if character == ".":
                 prefix = text[start:i + 1]
                 decimal = i > 0 and i + 1 < len(text) and text[i-1].isdigit() and text[i+1].isdigit()
-                initial = bool(re.search(r"(?:\b[A-Z]|(?:\b[A-Za-z]\.)+[A-Za-z])\.$", prefix))
+                initial = bool(re.search(
+                    r"(?:(?:^|[;:]\s*)(?:[A-Z]\.\s*)*[A-Z]|\b(?:Dr|Prof|Mr|Mrs|Ms)\.\s+[A-Z]|\b[A-Z][a-z]+\s+[A-Z]|(?:\b[A-Za-z]\.)+[A-Za-z])\.$",
+                    prefix.lstrip(),
+                ))
+                if re.search(r"\b(?:group|sample|type|panel|class|method|set|site)\s+[A-Z]\.$", prefix, re.IGNORECASE):
+                    initial = False
                 boundary = not (decimal or initial or self.ABBREVIATIONS.search(prefix))
             end = i + 1
             if boundary:
