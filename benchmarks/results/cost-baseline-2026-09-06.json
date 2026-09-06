@@ -1,0 +1,3491 @@
+{
+  "corpus_sha256": "4439cbdee80a9579a726e149729b38dc467eefb21e0190590333ec15beb8ff5d",
+  "runs": [
+    {
+      "label": "baseline-v1",
+      "generated": "2026-09-06T16:51:47",
+      "endpoint": "https://api.siliconflow.cn/v1",
+      "corpus": {
+        "path": "chapter_corpus.jsonl",
+        "sha256": "4439cbdee80a9579a726e149729b38dc467eefb21e0190590333ec15beb8ff5d",
+        "paragraphs": 12,
+        "chars": 2509,
+        "seeded_paragraphs": 6
+      },
+      "config": {
+        "models": {
+          "editor": "deepseek-ai/DeepSeek-V4-Flash",
+          "understanding": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "reviewer": "deepseek-ai/DeepSeek-V4-Flash"
+        },
+        "review_mode": "same",
+        "memory_mode": "structured",
+        "language": "english",
+        "intensity": "standard",
+        "max_requests": 40
+      },
+      "wall_seconds": 99.289,
+      "changes_written": 11,
+      "failure": null,
+      "run_summary": {
+        "stages": {
+          "understanding": {
+            "stage": "understanding",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+            "temperature": 0.4,
+            "timeout": 180,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "editor": {
+            "stage": "editor",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 90,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "reviewer": {
+            "stage": "reviewer",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 60,
+            "max_retries": 3,
+            "allow_insecure_http": false
+          }
+        },
+        "review_enabled": true,
+        "request_count": 21,
+        "requests": [
+          {
+            "status": "OK",
+            "elapsed_seconds": 6.269,
+            "prompt_tokens": 1117,
+            "completion_tokens": 108,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 6.095,
+            "prompt_tokens": 1381,
+            "completion_tokens": 108,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 11.739,
+            "prompt_tokens": 981,
+            "completion_tokens": 271,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.2,
+            "prompt_tokens": 559,
+            "completion_tokens": 545,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 10.866,
+            "prompt_tokens": 624,
+            "completion_tokens": 1681,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.852,
+            "prompt_tokens": 776,
+            "completion_tokens": 331,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.151,
+            "prompt_tokens": 671,
+            "completion_tokens": 598,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.293,
+            "prompt_tokens": 661,
+            "completion_tokens": 298,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.11,
+            "prompt_tokens": 566,
+            "completion_tokens": 324,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.949,
+            "prompt_tokens": 773,
+            "completion_tokens": 463,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.347,
+            "prompt_tokens": 639,
+            "completion_tokens": 338,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 5.744,
+            "prompt_tokens": 635,
+            "completion_tokens": 1036,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 8.111,
+            "prompt_tokens": 859,
+            "completion_tokens": 1247,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.01,
+            "prompt_tokens": 790,
+            "completion_tokens": 284,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.758,
+            "prompt_tokens": 712,
+            "completion_tokens": 560,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 5.521,
+            "prompt_tokens": 527,
+            "completion_tokens": 786,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.778,
+            "prompt_tokens": 534,
+            "completion_tokens": 472,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.494,
+            "prompt_tokens": 544,
+            "completion_tokens": 837,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.809,
+            "prompt_tokens": 608,
+            "completion_tokens": 469,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.843,
+            "prompt_tokens": 792,
+            "completion_tokens": 442,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.239,
+            "prompt_tokens": 504,
+            "completion_tokens": 127,
+            "stage": "reviewer"
+          }
+        ],
+        "memory": {
+          "mode": "structured",
+          "chapters": 2,
+          "failed_chapters": 0,
+          "partial_chapters": 0
+        }
+      },
+      "requests": [
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 6.269,
+          "prompt_tokens": 1117,
+          "completion_tokens": 108,
+          "attempts_recorded": 1,
+          "prompt_chars": 3478,
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 6.095,
+          "prompt_tokens": 1381,
+          "completion_tokens": 108,
+          "attempts_recorded": 1,
+          "prompt_chars": 4356,
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.2,
+          "prompt_tokens": 559,
+          "completion_tokens": 545,
+          "attempts_recorded": 1,
+          "prompt_chars": 2205,
+          "target_chars": 245,
+          "context_chars": 228,
+          "memory_chars": 144,
+          "source_chars": 473
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 10.866,
+          "prompt_tokens": 624,
+          "completion_tokens": 1681,
+          "attempts_recorded": 1,
+          "prompt_chars": 2449,
+          "target_chars": 226,
+          "context_chars": 455,
+          "memory_chars": 144,
+          "source_chars": 681
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 5.521,
+          "prompt_tokens": 527,
+          "completion_tokens": 786,
+          "attempts_recorded": 1,
+          "prompt_chars": 2063,
+          "target_chars": 177,
+          "context_chars": 0,
+          "memory_chars": 135,
+          "source_chars": 177
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.852,
+          "prompt_tokens": 776,
+          "completion_tokens": 331,
+          "attempts_recorded": 1,
+          "prompt_chars": 3004,
+          "target_chars": 206,
+          "context_chars": 725,
+          "memory_chars": 413,
+          "source_chars": 931
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.151,
+          "prompt_tokens": 671,
+          "completion_tokens": 598,
+          "attempts_recorded": 1,
+          "prompt_chars": 2705,
+          "target_chars": 248,
+          "context_chars": 653,
+          "memory_chars": 144,
+          "source_chars": 901
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.778,
+          "prompt_tokens": 534,
+          "completion_tokens": 472,
+          "attempts_recorded": 1,
+          "prompt_chars": 2118,
+          "target_chars": 181,
+          "context_chars": 0,
+          "memory_chars": 135,
+          "source_chars": 181
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.293,
+          "prompt_tokens": 661,
+          "completion_tokens": 298,
+          "attempts_recorded": 1,
+          "prompt_chars": 2696,
+          "target_chars": 215,
+          "context_chars": 677,
+          "memory_chars": 144,
+          "source_chars": 892
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.11,
+          "prompt_tokens": 566,
+          "completion_tokens": 324,
+          "attempts_recorded": 1,
+          "prompt_chars": 2397,
+          "target_chars": 218,
+          "context_chars": 467,
+          "memory_chars": 135,
+          "source_chars": 685
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.494,
+          "prompt_tokens": 544,
+          "completion_tokens": 837,
+          "attempts_recorded": 1,
+          "prompt_chars": 2153,
+          "target_chars": 218,
+          "context_chars": 0,
+          "memory_chars": 135,
+          "source_chars": 218
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 11.739,
+          "prompt_tokens": 981,
+          "completion_tokens": 271,
+          "attempts_recorded": 1,
+          "prompt_chars": 3095,
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.949,
+          "prompt_tokens": 773,
+          "completion_tokens": 463,
+          "attempts_recorded": 1,
+          "prompt_chars": 2821,
+          "target_chars": 184,
+          "context_chars": 163,
+          "memory_chars": 886,
+          "source_chars": 347
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.347,
+          "prompt_tokens": 639,
+          "completion_tokens": 338,
+          "attempts_recorded": 1,
+          "prompt_chars": 2500,
+          "target_chars": 162,
+          "context_chars": 358,
+          "memory_chars": 403,
+          "source_chars": 520
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.809,
+          "prompt_tokens": 608,
+          "completion_tokens": 469,
+          "attempts_recorded": 1,
+          "prompt_chars": 2299,
+          "target_chars": 162,
+          "context_chars": 0,
+          "memory_chars": 403,
+          "source_chars": 162
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 5.744,
+          "prompt_tokens": 635,
+          "completion_tokens": 1036,
+          "attempts_recorded": 1,
+          "prompt_chars": 2512,
+          "target_chars": 170,
+          "context_chars": 535,
+          "memory_chars": 146,
+          "source_chars": 705
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 8.111,
+          "prompt_tokens": 859,
+          "completion_tokens": 1247,
+          "attempts_recorded": 1,
+          "prompt_chars": 3311,
+          "target_chars": 185,
+          "context_chars": 564,
+          "memory_chars": 944,
+          "source_chars": 749
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.843,
+          "prompt_tokens": 792,
+          "completion_tokens": 442,
+          "attempts_recorded": 1,
+          "prompt_chars": 2931,
+          "target_chars": 185,
+          "context_chars": 0,
+          "memory_chars": 944,
+          "source_chars": 185
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.01,
+          "prompt_tokens": 790,
+          "completion_tokens": 284,
+          "attempts_recorded": 1,
+          "prompt_chars": 3151,
+          "target_chars": 227,
+          "context_chars": 562,
+          "memory_chars": 694,
+          "source_chars": 789
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.758,
+          "prompt_tokens": 712,
+          "completion_tokens": 560,
+          "attempts_recorded": 1,
+          "prompt_chars": 2921,
+          "target_chars": 203,
+          "context_chars": 415,
+          "memory_chars": 720,
+          "source_chars": 618
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.239,
+          "prompt_tokens": 504,
+          "completion_tokens": 127,
+          "attempts_recorded": 1,
+          "prompt_chars": 2023,
+          "target_chars": 86,
+          "context_chars": 0,
+          "memory_chars": 395,
+          "source_chars": 86
+        }
+      ],
+      "stages": {
+        "understanding": {
+          "attempts": 3,
+          "ok": 3,
+          "seconds": 24.103,
+          "prompt_tokens": 3479,
+          "completion_tokens": 487,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 10929,
+          "source_chars": 0,
+          "memory_chars": 0
+        },
+        "editor": {
+          "attempts": 12,
+          "ok": 12,
+          "seconds": 52.391,
+          "prompt_tokens": 8265,
+          "completion_tokens": 7705,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 32672,
+          "source_chars": 8291,
+          "memory_chars": 4917
+        },
+        "reviewer": {
+          "attempts": 6,
+          "ok": 6,
+          "seconds": 22.684,
+          "prompt_tokens": 3509,
+          "completion_tokens": 3133,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 13587,
+          "source_chars": 1009,
+          "memory_chars": 2147
+        }
+      },
+      "totals": {
+        "attempts": 21,
+        "prompt_tokens": 15253,
+        "completion_tokens": 11325,
+        "seconds": 99.178
+      },
+      "paragraphs": {
+        "in_corpus": 12,
+        "reported": 12,
+        "with_edit_written": 6,
+        "zero_edit": 6,
+        "zero_edit_ratio": 0.5
+      },
+      "sentence_rows_by_status": {
+        "KEEP": 21,
+        "EDIT_WRITTEN": 11
+      },
+      "amplification": {
+        "corpus_chars": 2509,
+        "editor_source_chars": 8291,
+        "source_text_factor": 3.305
+      },
+      "paragraph_outcomes": [
+        {
+          "paragraph": 1,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 2,
+          "statuses": {
+            "EDIT_WRITTEN": 2,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P2:S1",
+            "P2:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:particles was",
+            "verbosity:In order to be able to",
+            "agreement:powder were"
+          ]
+        },
+        {
+          "paragraph": 3,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 4,
+          "statuses": {
+            "EDIT_WRITTEN": 2,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P4:S1",
+            "P4:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:density were",
+            "tense:are recorded"
+          ]
+        },
+        {
+          "paragraph": 5,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 6,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P6:S1",
+            "P6:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "verbosity:the fact that",
+            "verbosity:Due to this reason"
+          ]
+        },
+        {
+          "paragraph": 7,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 8,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P8:S1",
+            "P8:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:results shows",
+            "agreement:increase are"
+          ]
+        },
+        {
+          "paragraph": 9,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 10,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P10:S1",
+            "P10:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "verbosity:Owing to the fact that",
+            "redundancy:In addition, and moreover",
+            "agreement:protons reduces"
+          ]
+        },
+        {
+          "paragraph": 11,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 12,
+          "statuses": {
+            "EDIT_WRITTEN": 1,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P12:S1"
+          ],
+          "edit_written": 1,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:mechanism are"
+          ]
+        }
+      ],
+      "reference_agreement": {
+        "seeded_paragraphs": 6,
+        "seeded_without_edit": 0,
+        "clean_paragraphs": 6,
+        "clean_with_edit": 0
+      },
+      "paragraph_outcomes_provenance": "derived after the run from that run's Report.xlsx; the harness emits these fields directly from baseline-v2 onwards"
+    },
+    {
+      "label": "baseline-v2",
+      "generated": "2026-09-06T16:55:59",
+      "endpoint": "https://api.siliconflow.cn/v1",
+      "corpus": {
+        "path": "chapter_corpus.jsonl",
+        "sha256": "4439cbdee80a9579a726e149729b38dc467eefb21e0190590333ec15beb8ff5d",
+        "paragraphs": 12,
+        "chars": 2509,
+        "seeded_paragraphs": 6
+      },
+      "config": {
+        "models": {
+          "editor": "deepseek-ai/DeepSeek-V4-Flash",
+          "understanding": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "reviewer": "deepseek-ai/DeepSeek-V4-Flash"
+        },
+        "review_mode": "same",
+        "memory_mode": "structured",
+        "language": "english",
+        "intensity": "standard",
+        "max_requests": 40
+      },
+      "wall_seconds": 76.461,
+      "changes_written": 5,
+      "failure": null,
+      "run_summary": {
+        "stages": {
+          "understanding": {
+            "stage": "understanding",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+            "temperature": 0.4,
+            "timeout": 180,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "editor": {
+            "stage": "editor",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 90,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "reviewer": {
+            "stage": "reviewer",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 60,
+            "max_retries": 3,
+            "allow_insecure_http": false
+          }
+        },
+        "review_enabled": true,
+        "request_count": 12,
+        "requests": [
+          {
+            "status": "OK",
+            "elapsed_seconds": 14.073,
+            "prompt_tokens": 1117,
+            "completion_tokens": 345,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 8.261,
+            "prompt_tokens": 1618,
+            "completion_tokens": 345,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 6.325,
+            "prompt_tokens": 981,
+            "completion_tokens": 235,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.919,
+            "prompt_tokens": 776,
+            "completion_tokens": 608,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.408,
+            "prompt_tokens": 639,
+            "completion_tokens": 301,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 8.197,
+            "prompt_tokens": 722,
+            "completion_tokens": 1207,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 17.105,
+            "prompt_tokens": 696,
+            "completion_tokens": 878,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.466,
+            "prompt_tokens": 712,
+            "completion_tokens": 206,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.055,
+            "prompt_tokens": 625,
+            "completion_tokens": 225,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.821,
+            "prompt_tokens": 608,
+            "completion_tokens": 217,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.638,
+            "prompt_tokens": 632,
+            "completion_tokens": 565,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 7.079,
+            "prompt_tokens": 487,
+            "completion_tokens": 362,
+            "stage": "reviewer"
+          }
+        ],
+        "memory": {
+          "mode": "structured",
+          "chapters": 1,
+          "failed_chapters": 1,
+          "partial_chapters": 0
+        }
+      },
+      "requests": [
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 14.073,
+          "prompt_tokens": 1117,
+          "completion_tokens": 345,
+          "attempts_recorded": 1,
+          "prompt_chars": 3478,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 8.261,
+          "prompt_tokens": 1618,
+          "completion_tokens": 345,
+          "attempts_recorded": 1,
+          "prompt_chars": 5129,
+          "is_repair": true,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 6.325,
+          "prompt_tokens": 981,
+          "completion_tokens": 235,
+          "attempts_recorded": 1,
+          "prompt_chars": 3095,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.919,
+          "prompt_tokens": 776,
+          "completion_tokens": 608,
+          "attempts_recorded": 1,
+          "prompt_chars": 2822,
+          "is_repair": false,
+          "paragraphs": [
+            "P7"
+          ],
+          "target_chars": 184,
+          "context_chars": 163,
+          "memory_chars": 887,
+          "source_chars": 347
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.408,
+          "prompt_tokens": 639,
+          "completion_tokens": 301,
+          "attempts_recorded": 1,
+          "prompt_chars": 2500,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 358,
+          "memory_chars": 403,
+          "source_chars": 520
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.821,
+          "prompt_tokens": 608,
+          "completion_tokens": 217,
+          "attempts_recorded": 1,
+          "prompt_chars": 2297,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 0,
+          "memory_chars": 403,
+          "source_chars": 162
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 8.197,
+          "prompt_tokens": 722,
+          "completion_tokens": 1207,
+          "attempts_recorded": 1,
+          "prompt_chars": 2756,
+          "is_repair": false,
+          "paragraphs": [
+            "P9"
+          ],
+          "target_chars": 170,
+          "context_chars": 535,
+          "memory_chars": 390,
+          "source_chars": 705
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 17.105,
+          "prompt_tokens": 696,
+          "completion_tokens": 878,
+          "attempts_recorded": 1,
+          "prompt_chars": 2781,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 564,
+          "memory_chars": 414,
+          "source_chars": 749
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.638,
+          "prompt_tokens": 632,
+          "completion_tokens": 565,
+          "attempts_recorded": 1,
+          "prompt_chars": 2413,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 0,
+          "memory_chars": 414,
+          "source_chars": 185
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.466,
+          "prompt_tokens": 712,
+          "completion_tokens": 206,
+          "attempts_recorded": 1,
+          "prompt_chars": 2890,
+          "is_repair": false,
+          "paragraphs": [
+            "P11"
+          ],
+          "target_chars": 227,
+          "context_chars": 562,
+          "memory_chars": 433,
+          "source_chars": 789
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.055,
+          "prompt_tokens": 625,
+          "completion_tokens": 225,
+          "attempts_recorded": 1,
+          "prompt_chars": 2614,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 203,
+          "context_chars": 415,
+          "memory_chars": 413,
+          "source_chars": 618
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 7.079,
+          "prompt_tokens": 487,
+          "completion_tokens": 362,
+          "attempts_recorded": 1,
+          "prompt_chars": 1976,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 86,
+          "context_chars": 0,
+          "memory_chars": 403,
+          "source_chars": 86
+        }
+      ],
+      "stages": {
+        "understanding": {
+          "attempts": 3,
+          "ok": 3,
+          "repairs": 1,
+          "seconds": 28.659,
+          "prompt_tokens": 3716,
+          "completion_tokens": 925,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 11702,
+          "source_chars": 0,
+          "memory_chars": 0
+        },
+        "editor": {
+          "attempts": 6,
+          "ok": 6,
+          "repairs": 0,
+          "seconds": 35.15,
+          "prompt_tokens": 4170,
+          "completion_tokens": 3425,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 16363,
+          "source_chars": 3728,
+          "memory_chars": 2940
+        },
+        "reviewer": {
+          "attempts": 3,
+          "ok": 3,
+          "repairs": 0,
+          "seconds": 12.538,
+          "prompt_tokens": 1727,
+          "completion_tokens": 1144,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 6686,
+          "source_chars": 433,
+          "memory_chars": 1220
+        }
+      },
+      "paragraph_outcomes": [
+        {
+          "paragraph": 1,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 2,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:particles was",
+            "verbosity:In order to be able to",
+            "agreement:powder were"
+          ]
+        },
+        {
+          "paragraph": 3,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 4,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:density were",
+            "tense:are recorded"
+          ]
+        },
+        {
+          "paragraph": 5,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 6,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "verbosity:the fact that",
+            "verbosity:Due to this reason"
+          ]
+        },
+        {
+          "paragraph": 7,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 8,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P8:S1",
+            "P8:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:results shows",
+            "agreement:increase are"
+          ]
+        },
+        {
+          "paragraph": 9,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 10,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P10:S1",
+            "P10:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "verbosity:Owing to the fact that",
+            "redundancy:In addition, and moreover",
+            "agreement:protons reduces"
+          ]
+        },
+        {
+          "paragraph": 11,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 12,
+          "statuses": {
+            "EDIT_WRITTEN": 1,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P12:S1"
+          ],
+          "edit_written": 1,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:mechanism are"
+          ]
+        }
+      ],
+      "reference_agreement": {
+        "seeded_paragraphs": 6,
+        "seeded_without_edit": 3,
+        "clean_paragraphs": 6,
+        "clean_with_edit": 0
+      },
+      "totals": {
+        "attempts": 12,
+        "prompt_tokens": 9613,
+        "completion_tokens": 5494,
+        "seconds": 76.347
+      },
+      "paragraphs": {
+        "in_corpus": 12,
+        "reported": 12,
+        "with_edit_written": 3,
+        "zero_edit": 9,
+        "zero_edit_ratio": 0.75
+      },
+      "sentence_rows_by_status": {
+        "MEMORY_VALIDATION_ERROR": 6,
+        "KEEP": 10,
+        "EDIT_WRITTEN": 5
+      },
+      "amplification": {
+        "corpus_chars": 2509,
+        "editor_source_chars": 3728,
+        "source_text_factor": 1.486
+      }
+    },
+    {
+      "label": "baseline-v3",
+      "generated": "2026-09-06T16:58:19",
+      "endpoint": "https://api.siliconflow.cn/v1",
+      "corpus": {
+        "path": "chapter_corpus.jsonl",
+        "sha256": "4439cbdee80a9579a726e149729b38dc467eefb21e0190590333ec15beb8ff5d",
+        "paragraphs": 12,
+        "chars": 2509,
+        "seeded_paragraphs": 6
+      },
+      "config": {
+        "models": {
+          "editor": "deepseek-ai/DeepSeek-V4-Flash",
+          "understanding": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "reviewer": "deepseek-ai/DeepSeek-V4-Flash"
+        },
+        "review_mode": "same",
+        "memory_mode": "structured",
+        "language": "english",
+        "intensity": "standard",
+        "max_requests": 40
+      },
+      "wall_seconds": 82.597,
+      "changes_written": 10,
+      "failure": null,
+      "run_summary": {
+        "stages": {
+          "understanding": {
+            "stage": "understanding",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+            "temperature": 0.4,
+            "timeout": 180,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "editor": {
+            "stage": "editor",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 90,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "reviewer": {
+            "stage": "reviewer",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 60,
+            "max_retries": 3,
+            "allow_insecure_http": false
+          }
+        },
+        "review_enabled": true,
+        "request_count": 20,
+        "requests": [
+          {
+            "status": "OK",
+            "elapsed_seconds": 5.609,
+            "prompt_tokens": 1117,
+            "completion_tokens": 167,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 9.078,
+            "prompt_tokens": 981,
+            "completion_tokens": 272,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.429,
+            "prompt_tokens": 745,
+            "completion_tokens": 492,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 5.692,
+            "prompt_tokens": 624,
+            "completion_tokens": 812,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.698,
+            "prompt_tokens": 785,
+            "completion_tokens": 197,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 6.207,
+            "prompt_tokens": 671,
+            "completion_tokens": 879,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 5.651,
+            "prompt_tokens": 661,
+            "completion_tokens": 856,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 9.904,
+            "prompt_tokens": 566,
+            "completion_tokens": 1584,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.465,
+            "prompt_tokens": 773,
+            "completion_tokens": 135,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.933,
+            "prompt_tokens": 639,
+            "completion_tokens": 290,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.449,
+            "prompt_tokens": 635,
+            "completion_tokens": 382,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 6.654,
+            "prompt_tokens": 860,
+            "completion_tokens": 846,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.279,
+            "prompt_tokens": 790,
+            "completion_tokens": 344,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.308,
+            "prompt_tokens": 712,
+            "completion_tokens": 280,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.669,
+            "prompt_tokens": 565,
+            "completion_tokens": 333,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.682,
+            "prompt_tokens": 529,
+            "completion_tokens": 746,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.158,
+            "prompt_tokens": 441,
+            "completion_tokens": 157,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.061,
+            "prompt_tokens": 608,
+            "completion_tokens": 261,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.133,
+            "prompt_tokens": 797,
+            "completion_tokens": 499,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.423,
+            "prompt_tokens": 485,
+            "completion_tokens": 129,
+            "stage": "reviewer"
+          }
+        ],
+        "memory": {
+          "mode": "structured",
+          "chapters": 2,
+          "failed_chapters": 0,
+          "partial_chapters": 0
+        }
+      },
+      "requests": [
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 5.609,
+          "prompt_tokens": 1117,
+          "completion_tokens": 167,
+          "attempts_recorded": 1,
+          "prompt_chars": 3478,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.429,
+          "prompt_tokens": 745,
+          "completion_tokens": 492,
+          "attempts_recorded": 1,
+          "prompt_chars": 2773,
+          "is_repair": false,
+          "paragraphs": [
+            "P1"
+          ],
+          "target_chars": 245,
+          "context_chars": 228,
+          "memory_chars": 712,
+          "source_chars": 473
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 5.692,
+          "prompt_tokens": 624,
+          "completion_tokens": 812,
+          "attempts_recorded": 1,
+          "prompt_chars": 2449,
+          "is_repair": false,
+          "paragraphs": [
+            "P2"
+          ],
+          "target_chars": 226,
+          "context_chars": 455,
+          "memory_chars": 144,
+          "source_chars": 681
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.669,
+          "prompt_tokens": 565,
+          "completion_tokens": 333,
+          "attempts_recorded": 1,
+          "prompt_chars": 2183,
+          "is_repair": false,
+          "paragraphs": [
+            "P2"
+          ],
+          "target_chars": 177,
+          "context_chars": 0,
+          "memory_chars": 135,
+          "source_chars": 177
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.698,
+          "prompt_tokens": 785,
+          "completion_tokens": 197,
+          "attempts_recorded": 1,
+          "prompt_chars": 3032,
+          "is_repair": false,
+          "paragraphs": [
+            "P3"
+          ],
+          "target_chars": 206,
+          "context_chars": 725,
+          "memory_chars": 441,
+          "source_chars": 931
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 6.207,
+          "prompt_tokens": 671,
+          "completion_tokens": 879,
+          "attempts_recorded": 1,
+          "prompt_chars": 2705,
+          "is_repair": false,
+          "paragraphs": [
+            "P4"
+          ],
+          "target_chars": 248,
+          "context_chars": 653,
+          "memory_chars": 144,
+          "source_chars": 901
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.682,
+          "prompt_tokens": 529,
+          "completion_tokens": 746,
+          "attempts_recorded": 1,
+          "prompt_chars": 2101,
+          "is_repair": false,
+          "paragraphs": [
+            "P4"
+          ],
+          "target_chars": 181,
+          "context_chars": 0,
+          "memory_chars": 135,
+          "source_chars": 181
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 5.651,
+          "prompt_tokens": 661,
+          "completion_tokens": 856,
+          "attempts_recorded": 1,
+          "prompt_chars": 2696,
+          "is_repair": false,
+          "paragraphs": [
+            "P5"
+          ],
+          "target_chars": 215,
+          "context_chars": 677,
+          "memory_chars": 144,
+          "source_chars": 892
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 9.904,
+          "prompt_tokens": 566,
+          "completion_tokens": 1584,
+          "attempts_recorded": 1,
+          "prompt_chars": 2397,
+          "is_repair": false,
+          "paragraphs": [
+            "P6"
+          ],
+          "target_chars": 218,
+          "context_chars": 467,
+          "memory_chars": 135,
+          "source_chars": 685
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.158,
+          "prompt_tokens": 441,
+          "completion_tokens": 157,
+          "attempts_recorded": 1,
+          "prompt_chars": 1826,
+          "is_repair": false,
+          "paragraphs": [
+            "P6"
+          ],
+          "target_chars": 150,
+          "context_chars": 0,
+          "memory_chars": 126,
+          "source_chars": 150
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 9.078,
+          "prompt_tokens": 981,
+          "completion_tokens": 272,
+          "attempts_recorded": 1,
+          "prompt_chars": 3095,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.465,
+          "prompt_tokens": 773,
+          "completion_tokens": 135,
+          "attempts_recorded": 1,
+          "prompt_chars": 2821,
+          "is_repair": false,
+          "paragraphs": [
+            "P7"
+          ],
+          "target_chars": 184,
+          "context_chars": 163,
+          "memory_chars": 886,
+          "source_chars": 347
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.933,
+          "prompt_tokens": 639,
+          "completion_tokens": 290,
+          "attempts_recorded": 1,
+          "prompt_chars": 2500,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 358,
+          "memory_chars": 403,
+          "source_chars": 520
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.061,
+          "prompt_tokens": 608,
+          "completion_tokens": 261,
+          "attempts_recorded": 1,
+          "prompt_chars": 2297,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 0,
+          "memory_chars": 403,
+          "source_chars": 162
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.449,
+          "prompt_tokens": 635,
+          "completion_tokens": 382,
+          "attempts_recorded": 1,
+          "prompt_chars": 2512,
+          "is_repair": false,
+          "paragraphs": [
+            "P9"
+          ],
+          "target_chars": 170,
+          "context_chars": 535,
+          "memory_chars": 146,
+          "source_chars": 705
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 6.654,
+          "prompt_tokens": 860,
+          "completion_tokens": 846,
+          "attempts_recorded": 1,
+          "prompt_chars": 3315,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 564,
+          "memory_chars": 948,
+          "source_chars": 749
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.133,
+          "prompt_tokens": 797,
+          "completion_tokens": 499,
+          "attempts_recorded": 1,
+          "prompt_chars": 2942,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 0,
+          "memory_chars": 948,
+          "source_chars": 185
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.279,
+          "prompt_tokens": 790,
+          "completion_tokens": 344,
+          "attempts_recorded": 1,
+          "prompt_chars": 3151,
+          "is_repair": false,
+          "paragraphs": [
+            "P11"
+          ],
+          "target_chars": 227,
+          "context_chars": 562,
+          "memory_chars": 694,
+          "source_chars": 789
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.308,
+          "prompt_tokens": 712,
+          "completion_tokens": 280,
+          "attempts_recorded": 1,
+          "prompt_chars": 2921,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 203,
+          "context_chars": 415,
+          "memory_chars": 720,
+          "source_chars": 618
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.423,
+          "prompt_tokens": 485,
+          "completion_tokens": 129,
+          "attempts_recorded": 1,
+          "prompt_chars": 1963,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 86,
+          "context_chars": 0,
+          "memory_chars": 395,
+          "source_chars": 86
+        }
+      ],
+      "stages": {
+        "understanding": {
+          "attempts": 2,
+          "ok": 2,
+          "repairs": 0,
+          "seconds": 14.687,
+          "prompt_tokens": 2098,
+          "completion_tokens": 439,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 6573,
+          "source_chars": 0,
+          "memory_chars": 0
+        },
+        "editor": {
+          "attempts": 12,
+          "ok": 12,
+          "repairs": 0,
+          "seconds": 51.669,
+          "prompt_tokens": 8461,
+          "completion_tokens": 7097,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 33272,
+          "source_chars": 8291,
+          "memory_chars": 5517
+        },
+        "reviewer": {
+          "attempts": 6,
+          "ok": 6,
+          "repairs": 0,
+          "seconds": 16.126,
+          "prompt_tokens": 3425,
+          "completion_tokens": 2125,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 13312,
+          "source_chars": 941,
+          "memory_chars": 2142
+        }
+      },
+      "paragraph_outcomes": [
+        {
+          "paragraph": 1,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 2,
+          "statuses": {
+            "EDIT_WRITTEN": 2,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P2:S1",
+            "P2:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:particles was",
+            "verbosity:In order to be able to",
+            "agreement:powder were"
+          ]
+        },
+        {
+          "paragraph": 3,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 4,
+          "statuses": {
+            "EDIT_WRITTEN": 2,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P4:S1",
+            "P4:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:density were",
+            "tense:are recorded"
+          ]
+        },
+        {
+          "paragraph": 5,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 6,
+          "statuses": {
+            "EDIT_WRITTEN": 1,
+            "VALIDATION_REJECTED": 1
+          },
+          "edited_sentences": [
+            "P6:S1"
+          ],
+          "edit_written": 1,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "verbosity:the fact that",
+            "verbosity:Due to this reason"
+          ]
+        },
+        {
+          "paragraph": 7,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 8,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P8:S1",
+            "P8:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:results shows",
+            "agreement:increase are"
+          ]
+        },
+        {
+          "paragraph": 9,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 10,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P10:S1",
+            "P10:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "verbosity:Owing to the fact that",
+            "redundancy:In addition, and moreover",
+            "agreement:protons reduces"
+          ]
+        },
+        {
+          "paragraph": 11,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 12,
+          "statuses": {
+            "EDIT_WRITTEN": 1,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P12:S1"
+          ],
+          "edit_written": 1,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:mechanism are"
+          ]
+        }
+      ],
+      "reference_agreement": {
+        "seeded_paragraphs": 6,
+        "seeded_without_edit": 0,
+        "clean_paragraphs": 6,
+        "clean_with_edit": 0
+      },
+      "totals": {
+        "attempts": 20,
+        "prompt_tokens": 13984,
+        "completion_tokens": 9661,
+        "seconds": 82.482
+      },
+      "paragraphs": {
+        "in_corpus": 12,
+        "reported": 12,
+        "with_edit_written": 6,
+        "zero_edit": 6,
+        "zero_edit_ratio": 0.5
+      },
+      "sentence_rows_by_status": {
+        "KEEP": 21,
+        "EDIT_WRITTEN": 10,
+        "VALIDATION_REJECTED": 1
+      },
+      "amplification": {
+        "corpus_chars": 2509,
+        "editor_source_chars": 8291,
+        "source_text_factor": 3.305
+      }
+    },
+    {
+      "label": "baseline-v4",
+      "generated": "2026-09-06T16:59:59",
+      "endpoint": "https://api.siliconflow.cn/v1",
+      "corpus": {
+        "path": "chapter_corpus.jsonl",
+        "sha256": "4439cbdee80a9579a726e149729b38dc467eefb21e0190590333ec15beb8ff5d",
+        "paragraphs": 12,
+        "chars": 2509,
+        "seeded_paragraphs": 6
+      },
+      "config": {
+        "models": {
+          "editor": "deepseek-ai/DeepSeek-V4-Flash",
+          "understanding": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "reviewer": "deepseek-ai/DeepSeek-V4-Flash"
+        },
+        "review_mode": "same",
+        "memory_mode": "structured",
+        "language": "english",
+        "intensity": "standard",
+        "max_requests": 40
+      },
+      "wall_seconds": 93.199,
+      "changes_written": 5,
+      "failure": null,
+      "run_summary": {
+        "stages": {
+          "understanding": {
+            "stage": "understanding",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+            "temperature": 0.4,
+            "timeout": 180,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "editor": {
+            "stage": "editor",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 90,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "reviewer": {
+            "stage": "reviewer",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 60,
+            "max_retries": 3,
+            "allow_insecure_http": false
+          }
+        },
+        "review_enabled": true,
+        "request_count": 12,
+        "requests": [
+          {
+            "status": "OK",
+            "elapsed_seconds": 16.361,
+            "prompt_tokens": 1117,
+            "completion_tokens": 364,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 13.639,
+            "prompt_tokens": 1637,
+            "completion_tokens": 364,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 10.159,
+            "prompt_tokens": 981,
+            "completion_tokens": 272,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.645,
+            "prompt_tokens": 773,
+            "completion_tokens": 272,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.344,
+            "prompt_tokens": 639,
+            "completion_tokens": 344,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.386,
+            "prompt_tokens": 635,
+            "completion_tokens": 663,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 10.535,
+            "prompt_tokens": 860,
+            "completion_tokens": 1668,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.23,
+            "prompt_tokens": 790,
+            "completion_tokens": 378,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 16.58,
+            "prompt_tokens": 712,
+            "completion_tokens": 421,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 9.649,
+            "prompt_tokens": 632,
+            "completion_tokens": 230,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.202,
+            "prompt_tokens": 782,
+            "completion_tokens": 280,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.397,
+            "prompt_tokens": 493,
+            "completion_tokens": 195,
+            "stage": "reviewer"
+          }
+        ],
+        "memory": {
+          "mode": "structured",
+          "chapters": 1,
+          "failed_chapters": 1,
+          "partial_chapters": 0
+        }
+      },
+      "requests": [
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 16.361,
+          "prompt_tokens": 1117,
+          "completion_tokens": 364,
+          "attempts_recorded": 1,
+          "prompt_chars": 3478,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 13.639,
+          "prompt_tokens": 1637,
+          "completion_tokens": 364,
+          "attempts_recorded": 1,
+          "prompt_chars": 5191,
+          "is_repair": true,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 10.159,
+          "prompt_tokens": 981,
+          "completion_tokens": 272,
+          "attempts_recorded": 1,
+          "prompt_chars": 3095,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.645,
+          "prompt_tokens": 773,
+          "completion_tokens": 272,
+          "attempts_recorded": 1,
+          "prompt_chars": 2821,
+          "is_repair": false,
+          "paragraphs": [
+            "P7"
+          ],
+          "target_chars": 184,
+          "context_chars": 163,
+          "memory_chars": 886,
+          "source_chars": 347
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.344,
+          "prompt_tokens": 639,
+          "completion_tokens": 344,
+          "attempts_recorded": 1,
+          "prompt_chars": 2500,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 358,
+          "memory_chars": 403,
+          "source_chars": 520
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 9.649,
+          "prompt_tokens": 632,
+          "completion_tokens": 230,
+          "attempts_recorded": 1,
+          "prompt_chars": 2378,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 0,
+          "memory_chars": 403,
+          "source_chars": 162
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.386,
+          "prompt_tokens": 635,
+          "completion_tokens": 663,
+          "attempts_recorded": 1,
+          "prompt_chars": 2512,
+          "is_repair": false,
+          "paragraphs": [
+            "P9"
+          ],
+          "target_chars": 170,
+          "context_chars": 535,
+          "memory_chars": 146,
+          "source_chars": 705
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 10.535,
+          "prompt_tokens": 860,
+          "completion_tokens": 1668,
+          "attempts_recorded": 1,
+          "prompt_chars": 3315,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 564,
+          "memory_chars": 948,
+          "source_chars": 749
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.202,
+          "prompt_tokens": 782,
+          "completion_tokens": 280,
+          "attempts_recorded": 1,
+          "prompt_chars": 2885,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 0,
+          "memory_chars": 948,
+          "source_chars": 185
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.23,
+          "prompt_tokens": 790,
+          "completion_tokens": 378,
+          "attempts_recorded": 1,
+          "prompt_chars": 3151,
+          "is_repair": false,
+          "paragraphs": [
+            "P11"
+          ],
+          "target_chars": 227,
+          "context_chars": 562,
+          "memory_chars": 694,
+          "source_chars": 789
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 16.58,
+          "prompt_tokens": 712,
+          "completion_tokens": 421,
+          "attempts_recorded": 1,
+          "prompt_chars": 2921,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 203,
+          "context_chars": 415,
+          "memory_chars": 720,
+          "source_chars": 618
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.397,
+          "prompt_tokens": 493,
+          "completion_tokens": 195,
+          "attempts_recorded": 1,
+          "prompt_chars": 1996,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 86,
+          "context_chars": 0,
+          "memory_chars": 395,
+          "source_chars": 86
+        }
+      ],
+      "stages": {
+        "understanding": {
+          "attempts": 3,
+          "ok": 3,
+          "repairs": 1,
+          "seconds": 40.159,
+          "prompt_tokens": 3735,
+          "completion_tokens": 1000,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 11764,
+          "source_chars": 0,
+          "memory_chars": 0
+        },
+        "editor": {
+          "attempts": 6,
+          "ok": 6,
+          "repairs": 0,
+          "seconds": 39.72,
+          "prompt_tokens": 4409,
+          "completion_tokens": 3746,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 17220,
+          "source_chars": 3728,
+          "memory_chars": 3797
+        },
+        "reviewer": {
+          "attempts": 3,
+          "ok": 3,
+          "repairs": 0,
+          "seconds": 13.248,
+          "prompt_tokens": 1907,
+          "completion_tokens": 705,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 7259,
+          "source_chars": 433,
+          "memory_chars": 1746
+        }
+      },
+      "paragraph_outcomes": [
+        {
+          "paragraph": 1,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 2,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:particles was",
+            "verbosity:In order to be able to",
+            "agreement:powder were"
+          ]
+        },
+        {
+          "paragraph": 3,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 4,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:density were",
+            "tense:are recorded"
+          ]
+        },
+        {
+          "paragraph": 5,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 6,
+          "statuses": {
+            "MEMORY_VALIDATION_ERROR": 1
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "verbosity:the fact that",
+            "verbosity:Due to this reason"
+          ]
+        },
+        {
+          "paragraph": 7,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 8,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P8:S1",
+            "P8:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:results shows",
+            "agreement:increase are"
+          ]
+        },
+        {
+          "paragraph": 9,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 10,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P10:S1",
+            "P10:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "verbosity:Owing to the fact that",
+            "redundancy:In addition, and moreover",
+            "agreement:protons reduces"
+          ]
+        },
+        {
+          "paragraph": 11,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 12,
+          "statuses": {
+            "EDIT_WRITTEN": 1,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P12:S1"
+          ],
+          "edit_written": 1,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:mechanism are"
+          ]
+        }
+      ],
+      "reference_agreement": {
+        "seeded_paragraphs": 6,
+        "seeded_without_edit": 3,
+        "clean_paragraphs": 6,
+        "clean_with_edit": 0
+      },
+      "totals": {
+        "attempts": 12,
+        "prompt_tokens": 10051,
+        "completion_tokens": 5451,
+        "seconds": 93.127
+      },
+      "paragraphs": {
+        "in_corpus": 12,
+        "reported": 12,
+        "with_edit_written": 3,
+        "zero_edit": 9,
+        "zero_edit_ratio": 0.75
+      },
+      "sentence_rows_by_status": {
+        "MEMORY_VALIDATION_ERROR": 6,
+        "KEEP": 10,
+        "EDIT_WRITTEN": 5
+      },
+      "amplification": {
+        "corpus_chars": 2509,
+        "editor_source_chars": 3728,
+        "source_text_factor": 1.486
+      }
+    },
+    {
+      "label": "baseline-v5",
+      "generated": "2026-09-06T17:02:06",
+      "endpoint": "https://api.siliconflow.cn/v1",
+      "corpus": {
+        "path": "chapter_corpus.jsonl",
+        "sha256": "4439cbdee80a9579a726e149729b38dc467eefb21e0190590333ec15beb8ff5d",
+        "paragraphs": 12,
+        "chars": 2509,
+        "seeded_paragraphs": 6
+      },
+      "config": {
+        "models": {
+          "editor": "deepseek-ai/DeepSeek-V4-Flash",
+          "understanding": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "reviewer": "deepseek-ai/DeepSeek-V4-Flash"
+        },
+        "review_mode": "same",
+        "memory_mode": "structured",
+        "language": "english",
+        "intensity": "standard",
+        "max_requests": 40
+      },
+      "wall_seconds": 120.641,
+      "changes_written": 10,
+      "failure": null,
+      "run_summary": {
+        "stages": {
+          "understanding": {
+            "stage": "understanding",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+            "temperature": 0.4,
+            "timeout": 180,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "editor": {
+            "stage": "editor",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 90,
+            "max_retries": 1,
+            "allow_insecure_http": false
+          },
+          "reviewer": {
+            "stage": "reviewer",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "temperature": 0.1,
+            "timeout": 60,
+            "max_retries": 3,
+            "allow_insecure_http": false
+          }
+        },
+        "review_enabled": true,
+        "request_count": 20,
+        "requests": [
+          {
+            "status": "OK",
+            "elapsed_seconds": 6.36,
+            "prompt_tokens": 1117,
+            "completion_tokens": 167,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 8.155,
+            "prompt_tokens": 981,
+            "completion_tokens": 274,
+            "stage": "understanding"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.415,
+            "prompt_tokens": 745,
+            "completion_tokens": 639,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 5.327,
+            "prompt_tokens": 624,
+            "completion_tokens": 903,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.037,
+            "prompt_tokens": 785,
+            "completion_tokens": 106,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.832,
+            "prompt_tokens": 671,
+            "completion_tokens": 728,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.813,
+            "prompt_tokens": 661,
+            "completion_tokens": 269,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 7.223,
+            "prompt_tokens": 566,
+            "completion_tokens": 1140,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.027,
+            "prompt_tokens": 773,
+            "completion_tokens": 234,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.642,
+            "prompt_tokens": 639,
+            "completion_tokens": 426,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.212,
+            "prompt_tokens": 635,
+            "completion_tokens": 291,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 50.339,
+            "prompt_tokens": 861,
+            "completion_tokens": 1112,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.985,
+            "prompt_tokens": 790,
+            "completion_tokens": 513,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.963,
+            "prompt_tokens": 712,
+            "completion_tokens": 269,
+            "stage": "editor"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.279,
+            "prompt_tokens": 561,
+            "completion_tokens": 546,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.21,
+            "prompt_tokens": 553,
+            "completion_tokens": 290,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 3.496,
+            "prompt_tokens": 437,
+            "completion_tokens": 521,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 4.727,
+            "prompt_tokens": 608,
+            "completion_tokens": 697,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 2.4,
+            "prompt_tokens": 783,
+            "completion_tokens": 338,
+            "stage": "reviewer"
+          },
+          {
+            "status": "OK",
+            "elapsed_seconds": 1.078,
+            "prompt_tokens": 483,
+            "completion_tokens": 104,
+            "stage": "reviewer"
+          }
+        ],
+        "memory": {
+          "mode": "structured",
+          "chapters": 2,
+          "failed_chapters": 0,
+          "partial_chapters": 0
+        }
+      },
+      "requests": [
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 6.36,
+          "prompt_tokens": 1117,
+          "completion_tokens": 167,
+          "attempts_recorded": 1,
+          "prompt_chars": 3478,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.415,
+          "prompt_tokens": 745,
+          "completion_tokens": 639,
+          "attempts_recorded": 1,
+          "prompt_chars": 2773,
+          "is_repair": false,
+          "paragraphs": [
+            "P1"
+          ],
+          "target_chars": 245,
+          "context_chars": 228,
+          "memory_chars": 712,
+          "source_chars": 473
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 5.327,
+          "prompt_tokens": 624,
+          "completion_tokens": 903,
+          "attempts_recorded": 1,
+          "prompt_chars": 2449,
+          "is_repair": false,
+          "paragraphs": [
+            "P2"
+          ],
+          "target_chars": 226,
+          "context_chars": 455,
+          "memory_chars": 144,
+          "source_chars": 681
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.279,
+          "prompt_tokens": 561,
+          "completion_tokens": 546,
+          "attempts_recorded": 1,
+          "prompt_chars": 2185,
+          "is_repair": false,
+          "paragraphs": [
+            "P2"
+          ],
+          "target_chars": 177,
+          "context_chars": 0,
+          "memory_chars": 135,
+          "source_chars": 177
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.037,
+          "prompt_tokens": 785,
+          "completion_tokens": 106,
+          "attempts_recorded": 1,
+          "prompt_chars": 3032,
+          "is_repair": false,
+          "paragraphs": [
+            "P3"
+          ],
+          "target_chars": 206,
+          "context_chars": 725,
+          "memory_chars": 441,
+          "source_chars": 931
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.832,
+          "prompt_tokens": 671,
+          "completion_tokens": 728,
+          "attempts_recorded": 1,
+          "prompt_chars": 2705,
+          "is_repair": false,
+          "paragraphs": [
+            "P4"
+          ],
+          "target_chars": 248,
+          "context_chars": 653,
+          "memory_chars": 144,
+          "source_chars": 901
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.21,
+          "prompt_tokens": 553,
+          "completion_tokens": 290,
+          "attempts_recorded": 1,
+          "prompt_chars": 2175,
+          "is_repair": false,
+          "paragraphs": [
+            "P4"
+          ],
+          "target_chars": 181,
+          "context_chars": 0,
+          "memory_chars": 135,
+          "source_chars": 181
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.813,
+          "prompt_tokens": 661,
+          "completion_tokens": 269,
+          "attempts_recorded": 1,
+          "prompt_chars": 2696,
+          "is_repair": false,
+          "paragraphs": [
+            "P5"
+          ],
+          "target_chars": 215,
+          "context_chars": 677,
+          "memory_chars": 144,
+          "source_chars": 892
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 7.223,
+          "prompt_tokens": 566,
+          "completion_tokens": 1140,
+          "attempts_recorded": 1,
+          "prompt_chars": 2397,
+          "is_repair": false,
+          "paragraphs": [
+            "P6"
+          ],
+          "target_chars": 218,
+          "context_chars": 467,
+          "memory_chars": 135,
+          "source_chars": 685
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.496,
+          "prompt_tokens": 437,
+          "completion_tokens": 521,
+          "attempts_recorded": 1,
+          "prompt_chars": 1822,
+          "is_repair": false,
+          "paragraphs": [
+            "P6"
+          ],
+          "target_chars": 150,
+          "context_chars": 0,
+          "memory_chars": 126,
+          "source_chars": 150
+        },
+        {
+          "stage": "understanding",
+          "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+          "status": "OK",
+          "seconds": 8.155,
+          "prompt_tokens": 981,
+          "completion_tokens": 274,
+          "attempts_recorded": 1,
+          "prompt_chars": 3095,
+          "is_repair": false,
+          "paragraphs": [],
+          "target_chars": 0,
+          "context_chars": 0,
+          "memory_chars": 0,
+          "source_chars": 0
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.027,
+          "prompt_tokens": 773,
+          "completion_tokens": 234,
+          "attempts_recorded": 1,
+          "prompt_chars": 2821,
+          "is_repair": false,
+          "paragraphs": [
+            "P7"
+          ],
+          "target_chars": 184,
+          "context_chars": 163,
+          "memory_chars": 886,
+          "source_chars": 347
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.642,
+          "prompt_tokens": 639,
+          "completion_tokens": 426,
+          "attempts_recorded": 1,
+          "prompt_chars": 2500,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 358,
+          "memory_chars": 403,
+          "source_chars": 520
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 4.727,
+          "prompt_tokens": 608,
+          "completion_tokens": 697,
+          "attempts_recorded": 1,
+          "prompt_chars": 2299,
+          "is_repair": false,
+          "paragraphs": [
+            "P8"
+          ],
+          "target_chars": 162,
+          "context_chars": 0,
+          "memory_chars": 403,
+          "source_chars": 162
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.212,
+          "prompt_tokens": 635,
+          "completion_tokens": 291,
+          "attempts_recorded": 1,
+          "prompt_chars": 2512,
+          "is_repair": false,
+          "paragraphs": [
+            "P9"
+          ],
+          "target_chars": 170,
+          "context_chars": 535,
+          "memory_chars": 146,
+          "source_chars": 705
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 50.339,
+          "prompt_tokens": 861,
+          "completion_tokens": 1112,
+          "attempts_recorded": 1,
+          "prompt_chars": 3325,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 564,
+          "memory_chars": 958,
+          "source_chars": 749
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 2.4,
+          "prompt_tokens": 783,
+          "completion_tokens": 338,
+          "attempts_recorded": 1,
+          "prompt_chars": 2921,
+          "is_repair": false,
+          "paragraphs": [
+            "P10"
+          ],
+          "target_chars": 185,
+          "context_chars": 0,
+          "memory_chars": 958,
+          "source_chars": 185
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 3.985,
+          "prompt_tokens": 790,
+          "completion_tokens": 513,
+          "attempts_recorded": 1,
+          "prompt_chars": 3151,
+          "is_repair": false,
+          "paragraphs": [
+            "P11"
+          ],
+          "target_chars": 227,
+          "context_chars": 562,
+          "memory_chars": 694,
+          "source_chars": 789
+        },
+        {
+          "stage": "editor",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.963,
+          "prompt_tokens": 712,
+          "completion_tokens": 269,
+          "attempts_recorded": 1,
+          "prompt_chars": 2921,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 203,
+          "context_chars": 415,
+          "memory_chars": 720,
+          "source_chars": 618
+        },
+        {
+          "stage": "reviewer",
+          "model": "deepseek-ai/DeepSeek-V4-Flash",
+          "status": "OK",
+          "seconds": 1.078,
+          "prompt_tokens": 483,
+          "completion_tokens": 104,
+          "attempts_recorded": 1,
+          "prompt_chars": 1953,
+          "is_repair": false,
+          "paragraphs": [
+            "P12"
+          ],
+          "target_chars": 86,
+          "context_chars": 0,
+          "memory_chars": 395,
+          "source_chars": 86
+        }
+      ],
+      "stages": {
+        "understanding": {
+          "attempts": 2,
+          "ok": 2,
+          "repairs": 0,
+          "seconds": 14.515,
+          "prompt_tokens": 2098,
+          "completion_tokens": 441,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 6573,
+          "source_chars": 0,
+          "memory_chars": 0
+        },
+        "editor": {
+          "attempts": 12,
+          "ok": 12,
+          "repairs": 0,
+          "seconds": 88.815,
+          "prompt_tokens": 8462,
+          "completion_tokens": 6630,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 33282,
+          "source_chars": 8291,
+          "memory_chars": 5527
+        },
+        "reviewer": {
+          "attempts": 6,
+          "ok": 6,
+          "repairs": 0,
+          "seconds": 17.19,
+          "prompt_tokens": 3425,
+          "completion_tokens": 2496,
+          "unknown_token_attempts": 0,
+          "prompt_chars": 13355,
+          "source_chars": 941,
+          "memory_chars": 2152
+        }
+      },
+      "paragraph_outcomes": [
+        {
+          "paragraph": 1,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 2,
+          "statuses": {
+            "EDIT_WRITTEN": 2,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P2:S1",
+            "P2:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:particles was",
+            "verbosity:In order to be able to",
+            "agreement:powder were"
+          ]
+        },
+        {
+          "paragraph": 3,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 4,
+          "statuses": {
+            "EDIT_WRITTEN": 2,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P4:S1",
+            "P4:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "agreement:density were",
+            "tense:are recorded"
+          ]
+        },
+        {
+          "paragraph": 5,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "2. Materials and Methods",
+          "seeded": []
+        },
+        {
+          "paragraph": 6,
+          "statuses": {
+            "EDIT_WRITTEN": 1,
+            "VALIDATION_REJECTED": 1
+          },
+          "edited_sentences": [
+            "P6:S1"
+          ],
+          "edit_written": 1,
+          "chapter": "2. Materials and Methods",
+          "seeded": [
+            "verbosity:the fact that",
+            "verbosity:Due to this reason"
+          ]
+        },
+        {
+          "paragraph": 7,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 8,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P8:S1",
+            "P8:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:results shows",
+            "agreement:increase are"
+          ]
+        },
+        {
+          "paragraph": 9,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 10,
+          "statuses": {
+            "EDIT_WRITTEN": 2
+          },
+          "edited_sentences": [
+            "P10:S1",
+            "P10:S2"
+          ],
+          "edit_written": 2,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "verbosity:Owing to the fact that",
+            "redundancy:In addition, and moreover",
+            "agreement:protons reduces"
+          ]
+        },
+        {
+          "paragraph": 11,
+          "statuses": {
+            "KEEP": 3
+          },
+          "edited_sentences": [],
+          "edit_written": 0,
+          "chapter": "3. Results and Discussion",
+          "seeded": []
+        },
+        {
+          "paragraph": 12,
+          "statuses": {
+            "EDIT_WRITTEN": 1,
+            "KEEP": 1
+          },
+          "edited_sentences": [
+            "P12:S1"
+          ],
+          "edit_written": 1,
+          "chapter": "3. Results and Discussion",
+          "seeded": [
+            "agreement:mechanism are"
+          ]
+        }
+      ],
+      "reference_agreement": {
+        "seeded_paragraphs": 6,
+        "seeded_without_edit": 0,
+        "clean_paragraphs": 6,
+        "clean_with_edit": 0
+      },
+      "totals": {
+        "attempts": 20,
+        "prompt_tokens": 13985,
+        "completion_tokens": 9567,
+        "seconds": 120.52
+      },
+      "paragraphs": {
+        "in_corpus": 12,
+        "reported": 12,
+        "with_edit_written": 6,
+        "zero_edit": 6,
+        "zero_edit_ratio": 0.5
+      },
+      "sentence_rows_by_status": {
+        "KEEP": 21,
+        "EDIT_WRITTEN": 10,
+        "VALIDATION_REJECTED": 1
+      },
+      "amplification": {
+        "corpus_chars": 2509,
+        "editor_source_chars": 8291,
+        "source_text_factor": 3.305
+      }
+    }
+  ]
+}
