@@ -82,6 +82,14 @@ workflow cache key; chapter notes depend only on the understanding model identit
 
 ## Reproduce
 
+Final local checks: 54 offline/UI tests and 8 real Word tests pass. A complete
+stage-routed Word run used Qwen3-30B instruct for understanding/review and DeepSeek
+V4 Flash for editing: 3 actual API attempts, 2 edited sentences, saved revisions
+verified, original source unchanged, and 0 additional attempts on cached fresh-
+output replay. The synthetic Word smoke allows at most 8 actual HTTP attempts,
+with up to two attempts per call and a 120-second timeout; these retry settings
+are separate from the fixed reviewer-comparison settings above.
+
 ```powershell
 python -m unittest test_pipeline_regressions test_p0 test_p1 test_stage_models test_review_compare test_stage_ui
 python -m unittest test_p1_word
@@ -91,7 +99,7 @@ The first command includes headless Streamlit configuration/persistence tests;
 the second needs real Microsoft Word. Paid checks read the existing key from
 stdin, never the command line: `python -m benchmarks.review_compare` (up to 12
 attempts), optionally `--reviewer-model Qwen/Qwen3.6-27B`.
-`python -m benchmarks.stage_word_live --reviewer-model Qwen/Qwen3-30B-A3B-Instruct-2507`
+`python -m benchmarks.stage_word_live --understanding-model Qwen/Qwen3-30B-A3B-Instruct-2507 --reviewer-model Qwen/Qwen3-30B-A3B-Instruct-2507`
 checks actual stage routing, saved synthetic Word revisions and fresh-output cache
 replay (up to 8 attempts). This Word check proves routing/persistence, not reviewer
 quality. Both tools pin the official SiliconFlow endpoint and fixed synthetic data.

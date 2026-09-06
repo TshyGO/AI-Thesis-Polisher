@@ -26,6 +26,7 @@ class BoundedClient(LLMClient):
 def main(stage_clients_factory=None):
     run = Path(__file__).resolve().parents[1] / 'cache' / ('p1-word-live-' + uuid.uuid4().hex)
     run.mkdir(parents=True)
+    print('Synthetic artifacts: ' + str(run), file=sys.stderr, flush=True)
     source = run / 'source.docx'
     with DocumentProcessor() as doc:
         doc.doc = doc.word.Documents.Add()
@@ -52,6 +53,8 @@ def main(stage_clients_factory=None):
             pipeline.chapter_notes_dir = run / 'notes'
             pipeline.chapter_notes_dir.mkdir(exist_ok=True)
             changes, report = pipeline.process_document(str(output))
+            if not changes:
+                print(json.dumps({'statuses': [r['status'] for r in pipeline.last_records], 'artifact': str(run)}), file=sys.stderr)
             assert changes > 0, 'No edit was written'
             assert not any(r['status'].endswith(('ERROR', 'FAILED', 'TIMEOUT')) for r in pipeline.last_records)
             decisions = [SentenceDecision(r['sentence_id'], 'edit', 'check', r['new'], 'grammar', 1)
