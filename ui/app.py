@@ -4,6 +4,7 @@ import time
 import json
 import shutil
 import uuid
+import hashlib
 from pathlib import Path
 
 import streamlit as st
@@ -16,14 +17,15 @@ except Exception:
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[
-        logging.FileHandler("app_debug.log", encoding="utf-8", mode="a"),
-        logging.StreamHandler(sys.stdout),
-    ],
-)
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[
+            logging.FileHandler("app_debug.log", encoding="utf-8", mode="a"),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_FILE = PROJECT_ROOT / "user_config.json"
@@ -102,7 +104,7 @@ hydrate_last_result_from_config(user_cfg)
 
 sys.path.append(str(PROJECT_ROOT))
 
-from engine.llm_client import LLMClient
+from engine.stage_models import build_stage_clients, persistable_overrides, saved_http_opt_in, credential_widget_key, same_endpoint, DEFAULTS
 from engine.document import DocumentProcessor
 from engine.sentence_pipeline import SentencePolishingPipeline as PolishingPipeline
 from engine.uploads import upload_identity
@@ -115,10 +117,53 @@ prompt_cfg = user_cfg.get("prompt_customization", {}) or {}
 with st.sidebar:
     st.title("⚙️ 大模型与输出设置")
 
-    api_key = st.text_input("API Key", type="password", value=user_cfg.get("api_key", ""), help="本地保存，绝不上传")
     base_url = st.text_input("Base URL", value=user_cfg.get("base_url", "https://api.deepseek.com/v1"), help="支持中转站或任意兼容 OpenAI 官方的端点")
+    saved_key = user_cfg.get('api_key', '') if same_endpoint(base_url, user_cfg.get('base_url', 'https://api.deepseek.com/v1')) else ''
+    api_key = st.text_input("API Key", type="password", value=saved_key,
+        key=credential_widget_key('main', base_url), help="Key 绑定接口地址；地址改变后需重新填写。保存账号会写入本地配置。")
+    allow_http = False
+    if base_url.lower().startswith('http://'):
+        st.warning('HTTP 不加密传输。已保存的主接口保留兼容；新地址需明确授权，建议改用 HTTPS。')
+        allow_http = st.checkbox('允许当前主接口使用 HTTP', value=saved_http_opt_in(user_cfg, base_url),
+            key='http-main-' + hashlib.sha256(base_url.encode()).hexdigest())
     model_name = st.text_input("Model", value=user_cfg.get("model", "deepseek-chat"), help="输入你要调用的模型名称")
     output_root = st.text_input("输出根目录", value=default_output_root, help="每次运行会在这里自动创建一个时间戳子目录")
+
+    review_modes = ['off', 'same', 'independent']
+    saved_mode = user_cfg.get('review_mode', 'same')
+    review_mode = st.selectbox('复审模式', review_modes,
+        index=review_modes.index(saved_mode) if saved_mode in review_modes else 1,
+        format_func=lambda mode: {'off': '不复审（最低调用量）', 'same': '同模型复审', 'independent': '独立模型／接口复审'}[mode])
+    stage_enabled = st.checkbox('分阶段模型配置', value=user_cfg.get('stage_models_enabled', False))
+    stage_settings = persistable_overrides(user_cfg.get('stage_models', {}))
+    if stage_enabled:
+        for stage, label in [('understanding', '章节理解'), ('editor', '编辑'), ('reviewer', '复审')]:
+            saved = stage_settings.get(stage, {})
+            with st.expander(label + '模型设置'):
+                st.caption('模型和地址留空则沿用主配置。不同地址必须填写自己的 Key；阶段 Key 仅留在本次会话。')
+                if stage == 'reviewer':
+                    st.caption('同模型模式沿用编辑阶段模型和 Key；关闭复审时以下设置不生效。')
+                stage_model = st.text_input(label + ' Model', value=saved.get('model', ''), placeholder=model_name)
+                stage_url = st.text_input(label + ' Base URL', value=saved.get('base_url', ''), placeholder=base_url)
+                stage_http = False
+                if stage_url.lower().startswith('http://'):
+                    stage_http = st.checkbox(label + '：明确允许此地址使用 HTTP（不加密）',
+                        value=saved.get('base_url') == stage_url and saved.get('allow_insecure_http', False) is True,
+                        key='http-' + stage + hashlib.sha256(stage_url.encode()).hexdigest())
+                stage_settings[stage] = {
+                    'model': stage_model,
+                    'base_url': stage_url,
+                    'allow_insecure_http': stage_http,
+                    'api_key': st.text_input(label + ' API Key', type='password', key=credential_widget_key(stage, stage_url or base_url)),
+                    'temperature': st.number_input(label + ' temperature', min_value=0.0, max_value=2.0,
+                        value=float(saved.get('temperature', DEFAULTS[stage][0])), step=0.1),
+                    'timeout': int(st.number_input(label + ' 超时（秒）', min_value=1, max_value=600,
+                        value=int(saved.get('timeout', DEFAULTS[stage][1])))),
+                    'max_retries': int(st.number_input(label + ' 尝试次数（含首次）', min_value=1, max_value=5,
+                        value=int(saved.get('max_retries', 3)))),
+                }
+    if review_mode == 'independent' and not stage_enabled:
+        st.info('独立复审需开启分阶段配置，并指定不同的复审模型或接口。')
 
     if st.button("💾 保存账号/模型/输出设置"):
         try:
@@ -126,8 +171,12 @@ with st.sidebar:
             update_config({
                 "api_key": api_key,
                 "base_url": base_url,
+                'allow_insecure_http': allow_http,
                 "model": model_name,
                 "output_root": normalized_output_root,
+                'review_mode': review_mode,
+                'stage_models_enabled': stage_enabled,
+                'stage_models': persistable_overrides(stage_settings),
             })
             st.success(f"配置已保存，本地输出目录：{normalized_output_root}")
         except Exception as e:
@@ -197,7 +246,8 @@ if uploaded_file is not None and api_key:
 
     with col2:
         st.subheader("🔧 复审与输出")
-        use_cross_review = st.checkbox("开启 AI 交叉检查 (Cross-Review)", value=True, help="第一轮提取建议后，再进行一轮保守复审")
+        use_cross_review = review_mode != 'off'
+        st.caption('复审模式在左侧设置；跨模型不代表质量必然更高。')
         all_chapters = st.session_state.get("parsed_chapters", [])
         skipped_chapters = st.multiselect(
             "需要跳过的章节",
@@ -259,6 +309,7 @@ if uploaded_file is not None and api_key:
         progress_text = "正在逐段处理并写入 Word，请耐心等待..."
         my_bar = st.progress(0, text=progress_text)
         status_box = st.empty()
+        clients = None
 
         try:
             normalized_output_root = ensure_directory(output_root)
@@ -266,11 +317,13 @@ if uploaded_file is not None and api_key:
             word_output_name = f"Polished_{sanitize_filename(uploaded_file.name)}"
             excel_output_name = f"Report_{sanitize_filename(Path(uploaded_file.name).stem)}.xlsx"
 
-            client = LLMClient(api_key=api_key, base_url=base_url, model=model_name)
+            clients = build_stage_clients({'api_key': api_key, 'base_url': base_url, 'model': model_name, 'allow_insecure_http': allow_http},
+                stage_settings if stage_enabled else {}, review_mode)
 
             with DocumentProcessor() as doc_parser:
                 pipeline = PolishingPipeline(
-                    llm_client=client,
+                    llm_client=clients['editor'],
+                    stage_clients=clients,
                     doc_parser=doc_parser,
                     config={
                         "language": language_mode,
@@ -301,6 +354,8 @@ if uploaded_file is not None and api_key:
             word_output_path = os.path.join(run_output_dir, word_output_name)
 
             persist_result_to_session(word_output_path, excel_path)
+            with st.expander('本次模型路由与调用记录'):
+                st.json(pipeline.run_summary)
             st.session_state["last_output_dir"] = run_output_dir
 
             update_config({
@@ -326,6 +381,12 @@ if uploaded_file is not None and api_key:
 
         except Exception as e:
             st.error(f"❌ 运行过程中发生错误：{e}")
+        finally:
+            for client in (clients or {}).values():
+                try:
+                    client.client.close()
+                except Exception as error:
+                    logging.getLogger('stage_clients').warning('Client cleanup failed (%s)', type(error).__name__)
 
 if st.session_state.get("result_docx_bytes"):
     st.markdown("### 📥 下载与输出")

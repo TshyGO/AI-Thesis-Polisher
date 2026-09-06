@@ -8,6 +8,8 @@ from engine.llm_client import ModelError
 from engine.revision_contract import parse_decisions, validate_review
 from engine.patches import sentence_patch_plan, PatchRollbackError
 from engine.excel_exporter import ExcelExporter
+from engine.llm_client import LLMClient
+from engine.stage_models import client_identity
 
 
 def decision_payload(decision):
@@ -15,7 +17,34 @@ def decision_payload(decision):
 
 
 class SentencePolishingPipeline(PolishingPipeline):
-    PROMPT_VERSION = 'p1-full-sentence-v1'
+    PROMPT_VERSION = 'stage-models-v3'
+
+    def __init__(self, llm_client, doc_parser, config, stage_clients=None):
+        super().__init__(llm_client, doc_parser, config)
+        self.stage_clients = stage_clients or {stage: llm_client for stage in ('understanding', 'editor', 'reviewer')}
+        if set(self.stage_clients) != {'understanding', 'editor', 'reviewer'}:
+            raise ValueError('All three stage clients are required')
+        self.run_summary = {}
+
+    def _chapter_client(self):
+        return self.stage_clients['understanding']
+
+    def _model_identity(self):
+        return json.dumps({stage: client_identity(client, stage) for stage, client in self.stage_clients.items()}, sort_keys=True)
+
+    def _chapter_model_identity(self):
+        return json.dumps(client_identity(self._chapter_client(), 'understanding'), sort_keys=True)
+
+    def _run_summary(self, starts):
+        stages, seen, events = {}, set(), []
+        for stage, client in self.stage_clients.items():
+            stages[stage] = client_identity(client, stage)
+            if id(client) not in seen and isinstance(client, LLMClient):
+                events.extend(dict(event, stage=stage if len({id(c) for c in self.stage_clients.values()}) == 3 else 'shared')
+                              for event in client.telemetry[starts.get(id(client), 0):])
+            seen.add(id(client))
+        return {'stages': stages, 'review_enabled': self.config.get('use_cross_review', True),
+                'request_count': len(events), 'requests': events}
 
     def _decide(self, snapshot, notes, neighbors):
         payload = {
@@ -28,7 +57,7 @@ class SentencePolishingPipeline(PolishingPipeline):
                   'citations, terminology, negation and modality (could/may/must). Keep normal experimental '
                   'passives. Do not invent context or add experimental facts. Review only the supplied sentences. '
                   + self._get_prompt_extra('stage1'))
-        return self.client.call_sentence_api([
+        return self.stage_clients['editor'].call_sentence_api([
             {'role': 'system', 'content': policy},
             {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)},
         ], [s.id for s in snapshot.sentences])
@@ -38,16 +67,17 @@ class SentencePolishingPipeline(PolishingPipeline):
         payload = {'chapter_notes': notes,
                    'source': {d.sentence_id: originals[d.sentence_id] for d in proposals},
                    'proposals': [decision_payload(d) for d in proposals]}
-        return self.client.call_sentence_api([
+        return self.stage_clients['reviewer'].call_sentence_api([
             {'role': 'system', 'content': 'Review only the nominated sentences. KEEP rejects a proposal; '
              'EDIT retains its EXACT revised_sentence. Never invent a new revision. Reject pointless paraphrases '
              'and any changes to facts, modality, negation or normal experimental passives. ' + self._get_prompt_extra('stage2')},
             {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)},
-        ], [d.sentence_id for d in proposals])
+        ], [d.sentence_id for d in proposals], validator=lambda reviewed: validate_review(proposals, reviewed))
 
     def process_document(self, doc_path, progress_callback=None):
         self.document_hash = hashlib.sha256(Path(doc_path).read_bytes()).hexdigest()
         self.last_records = []
+        starts = {id(c): len(c.telemetry) for c in self.stage_clients.values() if isinstance(c, LLMClient)}
         output = Path(self.config.get('output_dir') or Path(doc_path).parent)
         output.mkdir(parents=True, exist_ok=True)
         report = output / self.config.get('excel_output_filename', 'Report.xlsx')
@@ -150,4 +180,6 @@ class SentencePolishingPipeline(PolishingPipeline):
                 self.save_cache(cache)
                 if not ExcelExporter().export(str(report), self.last_records, chapters=chapters):
                     raise RuntimeError('Report export failed')
+                self.run_summary = self._run_summary(starts)
+                (output / 'Run.json').write_text(json.dumps(self.run_summary, ensure_ascii=False, indent=2), encoding='utf-8')
         return changes, str(report)

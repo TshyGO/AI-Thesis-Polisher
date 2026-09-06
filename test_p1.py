@@ -138,9 +138,12 @@ class SentencePipelineTests(unittest.TestCase):
         source.write_bytes(b'synthetic source')
         client = Mock(model='fake', base_url='fake')
         client.call_api.return_value = 'Synthetic grammar examples.'
-        def decide(messages, expected_ids):
-            return [SentenceDecision(sid, 'edit', 'fix', 'Alpha was fast.', 'grammar', 1)
+        def decide(messages, expected_ids, validator=None):
+            result = [SentenceDecision(sid, 'edit', 'fix', 'Alpha was fast.', 'grammar', 1)
                     if sid == 'P1:S2' else SentenceDecision(sid, 'keep', 'fine') for sid in expected_ids]
+            if validator is not None:
+                validator(result)
+            return result
         client.call_sentence_api.side_effect = decide
         document = MemoryDocument()
         pipeline = SentencePolishingPipeline(client, document, {'language': 'english', 'min_chars': 1, 'output_dir': str(root), 'use_cross_review': True})

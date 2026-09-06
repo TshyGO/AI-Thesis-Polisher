@@ -26,12 +26,16 @@ class LLMClient:
         # One retry owner: the loop below, not a second SDK retry loop.
         self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url, max_retries=0)
         self.logger = logging.getLogger("LLMClient")
+        self.telemetry = []
 
     def call_api(self, messages: list, temperature: float = 0.3, timeout: int = 60, max_retries: int = 3) -> str:
         """底层方法：调用 API 并返回原始内容，带异常重试。"""
         if max_retries < 1:
             raise ValueError("max_retries must be positive")
         for attempt in range(1, max_retries + 1):
+            started = time.monotonic()
+            response = None
+            status = 'OK'
             try:
                 response = self.client.chat.completions.create(
                     model=self.model,
@@ -46,12 +50,21 @@ class LLMClient:
                     raise ModelFormatError("模型返回空内容")
                 return content.strip()
             except ModelFormatError:
+                status = 'MODEL_FORMAT_ERROR'
                 raise
             except Exception as e:
+                status = 'MODEL_TIMEOUT' if isinstance(e, openai.APITimeoutError) else 'MODEL_HTTP_ERROR'
                 last_error = e
                 self.logger.warning("[API] 第%s次调用失败 (%s)", attempt, type(e).__name__)
                 if attempt < max_retries:
                     time.sleep(2 * attempt)
+            finally:
+                usage = getattr(response, 'usage', None)
+                tokens = {name: getattr(usage, name, None) for name in ('prompt_tokens', 'completion_tokens')}
+                if not hasattr(self, 'telemetry'):
+                    self.telemetry = []
+                self.telemetry.append({'status': status, 'elapsed_seconds': round(time.monotonic()-started, 3),
+                                       **{name: value if type(value) is int else None for name, value in tokens.items()}})
         
         status = "MODEL_TIMEOUT" if isinstance(last_error, openai.APITimeoutError) else "MODEL_HTTP_ERROR"
         raise ModelError(status, "模型请求失败，请检查连接与模型配置") from last_error
@@ -91,6 +104,14 @@ class LLMClient:
                 raise ModelFormatError()
         return result
 
+    @staticmethod
+    def _with_contract(messages, contract):
+        # Some compatible providers reject multiple system messages. Preserve all
+        # instructions in one leading message instead of silently dropping one.
+        systems = [contract] + [message['content'] for message in messages if message['role'] == 'system']
+        return [{'role': 'system', 'content': '\n\n'.join(systems)}] + [
+            dict(message) for message in messages if message['role'] != 'system']
+
     def call_json_api(self, messages: list, temperature: float = 0.3, timeout: int = 60, max_retries: int = 3) -> list:
         """高级方法：专门用于必须返回 JSON 数组的场景（如提取润色建议）"""
         contract = (
@@ -98,8 +119,7 @@ class LLMClient:
             "For no changes return exactly []. Each edit needs string old and new fields; "
             "new may be empty for a deletion. Do not return an unchanged edit to indicate KEEP."
         )
-        request = [dict(message) for message in messages]
-        request.insert(0, {"role": "system", "content": contract})
+        request = self._with_contract(messages, contract)
         content = self.call_api(request, temperature, timeout, max_retries)
         try:
             return self._extract_json(content)
@@ -111,18 +131,23 @@ class LLMClient:
             ], temperature, timeout, max_retries=1)
             return self._extract_json(repaired)
 
-    def call_sentence_api(self, messages, expected_ids, temperature=0.1, timeout=60):
+    def call_sentence_api(self, messages, expected_ids, temperature=0.1, timeout=60, validator=None):
         """Full-sentence protocol; local strict validation with one format retry."""
         from engine.revision_contract import SENTENCE_CONTRACT, parse_decisions
         expected_ids = list(expected_ids)
         contract = SENTENCE_CONTRACT + "\nOutput IDs must be EXACTLY: " + json.dumps(expected_ids)
-        request = [{"role": "system", "content": contract}] + [dict(m) for m in messages]
+        request = self._with_contract(messages, contract)
+        def parse_result(content):
+            decisions = parse_decisions(content, expected_ids)
+            if validator is not None:
+                validator(decisions)
+            return decisions
         content = self.call_api(request, temperature=temperature, timeout=timeout)
         try:
-            return parse_decisions(content, expected_ids)
-        except ModelFormatError:
+            return parse_result(content)
+        except ModelFormatError as error:
             content = self.call_api(request + [
                 {"role": "assistant", "content": content},
-                {"role": "user", "content": "Invalid contract. Return exactly the required sentence decisions. " + contract},
+                {"role": "user", "content": "Invalid contract: " + str(error) + ". Return exactly the required sentence decisions. " + contract},
             ], temperature=temperature, timeout=timeout, max_retries=1)
-            return parse_decisions(content, expected_ids)
+            return parse_result(content)
