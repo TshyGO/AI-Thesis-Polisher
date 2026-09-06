@@ -1,9 +1,11 @@
 import os
 import re
 import logging
+import xml.etree.ElementTree as ET
 import pythoncom
 import win32com.client
-from engine.sentences import ParagraphSnapshot
+from engine.sentences import ParagraphSnapshot, utf16_length
+from engine.patches import sentence_patch_plan, PatchResult, PatchRollbackError
 
 class DocumentProcessor:
     """
@@ -117,6 +119,120 @@ class DocumentProcessor:
         if paragraph_range.Information(12):  # wdWithInTable
             blocked = "TABLE_PARAGRAPH: table cell patching is not supported yet"
         return ParagraphSnapshot(index, text, paragraph_range.Start, blocked)
+
+    def _visible_paragraph_text(self, index):
+        """Project final text by excluding tracked deletions, without accepting them."""
+        paragraph = self.doc.Paragraphs(index).Range.Duplicate
+        raw = paragraph.Text
+        data = raw.encode('utf-16-le')
+        deletions = []
+        for revision in paragraph.Revisions:
+            if revision.Type == 2:  # wdRevisionDelete
+                deletions.append((revision.Range.Start - paragraph.Start, revision.Range.End - paragraph.Start))
+            elif revision.Type != 1:  # only insert/delete are produced by this writer
+                raise ValueError('Unexpected revision type during verification')
+        for start, end in sorted(deletions, reverse=True):
+            if start < 0 or end * 2 > len(data):
+                raise ValueError('Invalid deletion projection')
+            data = data[:start*2] + data[end*2:]
+        text = data.decode('utf-16-le')
+        return text[:-1] if text.endswith('\r') else text
+
+    @staticmethod
+    def _safe_patch_font(range_):
+        font = range_.Font
+        if font.Superscript != 0 or font.Subscript != 0:
+            return False
+        return all(getattr(font, name) not in (9999999, '')
+                   for name in ('Bold', 'Italic', 'Underline', 'Name', 'Size', 'Color'))
+
+    def _assign_patch(self, range_, text):
+        """Single mutation hook, also used to inject failures in real Word tests."""
+        range_.Text = text
+
+    @staticmethod
+    def _paragraph_fingerprint(range_):
+        """Compare document content/formatting, excluding volatile editor metadata."""
+        root = ET.fromstring(range_.WordOpenXML)
+        body = root.find('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}body')
+        if body is None:
+            raise ValueError('Missing Word XML body')
+        for node in body.iter():
+            for key in list(node.attrib):
+                name = key.rsplit('}', 1)[-1]
+                if name.startswith('rsid') or name in ('paraId', 'textId'):
+                    del node.attrib[key]
+            for child in list(node):
+                if child.tag.rsplit('}', 1)[-1] in ('proofErr', 'lastRenderedPageBreak'):
+                    node.remove(child)
+        return ET.tostring(body, encoding='unicode')
+
+    def apply_sentence_revisions(self, snapshot, decisions, protected_terms=()):
+        """Apply a whole paragraph atomically; verify final text or Undo the record."""
+        try:
+            current = self.snapshot_paragraph(snapshot.index)
+            if current.blocked_reason or snapshot.blocked_reason:
+                return PatchResult(False, current.blocked_reason or snapshot.blocked_reason)
+            if current.text != snapshot.text:
+                return PatchResult(False, 'STALE_SOURCE')
+            if not self.doc.TrackRevisions:
+                return PatchResult(False, 'TRACKING_DISABLED')
+            paragraph = self.doc.Paragraphs(snapshot.index).Range.Duplicate
+            # Rich structures require a future structure-aware patcher. Never flatten them.
+            for collection in ('Fields', 'OMaths', 'InlineShapes', 'ContentControls', 'Hyperlinks', 'Footnotes', 'Endnotes'):
+                if getattr(paragraph, collection).Count:
+                    return PatchResult(False, 'STRUCTURAL_CONTENT: ' + collection)
+            patches, expected = sentence_patch_plan(snapshot, decisions, protected_terms)
+            if not patches:
+                return PatchResult(False, 'NO_PATCHES')
+            base = paragraph.Start
+            for patch in patches:
+                start = base + utf16_length(snapshot.text[:patch.start])
+                end = base + utf16_length(snapshot.text[:patch.end])
+                target = self.doc.Range(start, end)
+                if target.Text != patch.old:
+                    return PatchResult(False, 'STALE_RANGE')
+                # For insertions inspect both adjacent characters, not a collapsed Font.
+                check = target if start != end else self.doc.Range(max(base, start-1), min(paragraph.End-1, end+1))
+                if not self._safe_patch_font(check):
+                    return PatchResult(False, 'UNSAFE_OR_MIXED_FORMATTING')
+            undo = self.word.UndoRecord
+            if undo.CustomRecordLevel != 0:
+                return PatchResult(False, 'NESTED_UNDO_RECORD')
+            before_xml = self._paragraph_fingerprint(paragraph)
+        except Exception as error:
+            return PatchResult(False, 'PREFLIGHT_FAILED: ' + type(error).__name__)
+
+        started = False
+        try:
+            undo.StartCustomRecord('Academic sentence edits')
+            started = True
+            for patch in reversed(patches):
+                start = base + utf16_length(snapshot.text[:patch.start])
+                end = base + utf16_length(snapshot.text[:patch.end])
+                target = self.doc.Range(start, end)
+                if target.Text != patch.old:
+                    raise ValueError('Source shifted during patch transaction')
+                self._assign_patch(target, patch.new)
+            if self._visible_paragraph_text(snapshot.index) != expected:
+                raise ValueError('Final sentence verification failed')
+            undo.EndCustomRecord()
+            started = False
+            self._cached_texts = None
+            return PatchResult(True, patch_count=len(patches))
+        except Exception as error:
+            try:
+                if started:
+                    undo.EndCustomRecord()
+                if self._paragraph_fingerprint(self.doc.Paragraphs(snapshot.index).Range) != before_xml:
+                    if not self.doc.Undo(1):
+                        raise RuntimeError('Word Undo returned false')
+                    if self._paragraph_fingerprint(self.doc.Paragraphs(snapshot.index).Range) != before_xml:
+                        raise RuntimeError('Rollback verification failed')
+                self._cached_texts = None
+            except Exception as rollback:
+                raise PatchRollbackError('Rollback could not be verified; discard this output without saving') from rollback
+            return PatchResult(False, 'ROLLED_BACK: ' + type(error).__name__)
 
     def _load_text_cache(self):
         """一次性 O(N) 读取所有段落文本到内存，替代无数次 O(N^2) COM 跨进程索引通讯"""

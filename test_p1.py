@@ -5,6 +5,8 @@ from dataclasses import FrozenInstanceError
 from engine.sentences import SentenceSegmenter, ParagraphSnapshot, utf16_length
 from engine.revision_contract import parse_decisions, validate_review
 from engine.llm_client import LLMClient, ModelFormatError
+from engine.patches import sentence_patch_plan
+from engine.revision_contract import SentenceDecision
 
 
 class SentenceTests(unittest.TestCase):
@@ -75,6 +77,29 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ModelFormatError):
             client.call_sentence_api([], ['P1:S1'])
         self.assertEqual(client.call_api.call_count, 2)
+
+
+class PatchPlanTests(unittest.TestCase):
+    def test_repeated_sentence_is_position_addressed(self):
+        snapshot = ParagraphSnapshot(1, 'Alpha is slow. Alpha is slow.')
+        edit = SentenceDecision('P1:S2', 'edit', 'grammar', 'Alpha was fast.', 'grammar', 0.9)
+        patches, expected = sentence_patch_plan(snapshot, [edit])
+        self.assertEqual(expected, 'Alpha is slow. Alpha was fast.')
+        self.assertTrue(all(p.start >= snapshot.sentences[1].start for p in patches))
+        self.assertGreater(len(patches), 1)
+
+    def test_protected_span_and_structure_rejected(self):
+        snapshot = ParagraphSnapshot(1, 'O2 was stable.')
+        for revised in ('N2 was stable.', 'O2\rwas stable.'):
+            with self.assertRaises(ValueError):
+                sentence_patch_plan(snapshot, [SentenceDecision('P1:S1', 'edit', 'x', revised, 'grammar', 1)])
+
+    def test_insert_delete_unicode(self):
+        snapshot = ParagraphSnapshot(1, '😀 Good result. Bad filler.')
+        patches, expected = sentence_patch_plan(snapshot, [
+            SentenceDecision('P1:S1', 'edit', 'x', '😀 A good result.', 'grammar', 1),
+            SentenceDecision('P1:S2', 'edit', 'x', '', 'wordiness', 1)])
+        self.assertEqual(expected, '😀 A good result. ')
 
 
 if __name__ == '__main__':
