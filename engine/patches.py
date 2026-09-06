@@ -33,7 +33,7 @@ def sentence_patch_plan(snapshot, decisions, protected_terms=()):
             if operation == 'equal':
                 continue
             old, new = sentence.text[i:j], revised[a:b]
-            if any(ord(c) < 32 for c in old + new):
+            if any(ord(c) < 32 or c in '\x7f\x85\u2028\u2029' for c in old + new):
                 raise ValueError('Patch touches document structure/control characters')
             if any((i < span.end and j > span.start) or (i == j and span.start < i < span.end) for span in protected):
                 raise ValueError('Diff touches a protected span')

@@ -179,9 +179,12 @@ class DocumentProcessor:
                 return PatchResult(False, 'TRACKING_DISABLED')
             paragraph = self.doc.Paragraphs(snapshot.index).Range.Duplicate
             # Rich structures require a future structure-aware patcher. Never flatten them.
-            for collection in ('Fields', 'OMaths', 'InlineShapes', 'ContentControls', 'Hyperlinks', 'Footnotes', 'Endnotes'):
+            for collection in ('Fields', 'OMaths', 'InlineShapes', 'ContentControls', 'Hyperlinks', 'Footnotes', 'Endnotes', 'Bookmarks', 'Comments'):
                 if getattr(paragraph, collection).Count:
                     return PatchResult(False, 'STRUCTURAL_CONTENT: ' + collection)
+            for control in self.doc.ContentControls:
+                if control.Range.Start < paragraph.End and control.Range.End > paragraph.Start:
+                    return PatchResult(False, 'STRUCTURAL_CONTENT: enclosing content control')
             patches, expected = sentence_patch_plan(snapshot, decisions, protected_terms)
             if not patches:
                 return PatchResult(False, 'NO_PATCHES')
