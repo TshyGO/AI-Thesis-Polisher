@@ -39,7 +39,7 @@ class SentenceSegmenter:
     # Abbreviations that normally introduce a following token. Terminal ambiguity
     # is deliberately handled conservatively by keeping the larger span.
     ABBREVIATIONS = re.compile(
-        r"(?:\b(?:Fig|Figs|Eq|Eqs|Dr|Prof|Mr|Mrs|Ms|No|Nos|Vol|vs|cf|al)|\be\.g|\bi\.e)\.$",
+        r"(?:\b(?:Fig|Figs|Eq|Eqs|Dr|Prof|Mr|Mrs|Ms|No|Nos|Vol|vs|cf|al)|\b(?:B|M|D)\.Sc|\bPh\.D|\be\.g|\bi\.e)\.$",
         re.IGNORECASE,
     )
     CLOSERS = '\"\'”’）)]』」'
