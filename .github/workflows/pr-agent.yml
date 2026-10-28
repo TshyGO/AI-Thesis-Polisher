@@ -58,19 +58,24 @@ jobs:
 
   ai-pr-review:
     needs: review-guard
+    # Automatic reviews cover only the owner's (TshyGO, user ID 50545377) branches in this
+    # repository. The check uses the immutable user ID because author_association stops
+    # saying OWNER once the repository belongs to the ptjworks organization: the event
+    # payload then reports the owner as COLLABORATOR, and every automatic review would skip.
     if: >-
       !cancelled() && needs.review-guard.outputs.proceed != 'false' && github.event.sender.type != 'Bot' &&
-      ((github.event_name == 'pull_request' && github.event.pull_request.author_association == 'OWNER' && !github.event.pull_request.draft) ||
+      ((github.event_name == 'pull_request' && github.event.pull_request.user.id == 50545377 &&
+        github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft) ||
        (github.event_name == 'issue_comment' && github.event.issue.pull_request != null &&
         contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) &&
         startsWith(github.event.comment.body, '/review')))
-    uses: ptjworks/ci-central/.github/workflows/pr-review.yml@5314fba75e7e0132d7cd77f74505a3f6c31129aa
+    uses: ptjworks/ci-central/.github/workflows/pr-review.yml@ee22fafe2fc955f6bb302f72c15ca4797282a882
     permissions:
       contents: read
       issues: write
       pull-requests: write
     with:
-      central_workflow_sha: 5314fba75e7e0132d7cd77f74505a3f6c31129aa
+      central_workflow_sha: ee22fafe2fc955f6bb302f72c15ca4797282a882
     secrets:
       PR_AGENT_LANE_A_KEY: ${{ secrets.PR_AGENT_LANE_A_KEY }}
       PR_AGENT_LANE_A_API_BASE: ${{ secrets.PR_AGENT_LANE_A_API_BASE }}
