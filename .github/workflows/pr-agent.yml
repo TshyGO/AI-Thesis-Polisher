@@ -2,6 +2,7 @@ name: AI PR Review
 
 # Thin caller: review policy and provider routing live in ptjworks/ci-central.
 # Keep the reusable workflow and central_workflow_sha pinned to the same commit.
+# The repository moved from TshyGO to ptjworks on 2026-10-28.
 on:
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
